@@ -1,0 +1,220 @@
+@model UbuhlebethuConnectPro.WebApp.Controllers.AdminUserViewModel
+@{
+    ViewData["Title"] = "User Details";
+    var lockout = ViewBag.LockoutEnd as System.DateTimeOffset?;
+    var isLockedOut = lockout.HasValue && lockout.Value > System.DateTimeOffset.UtcNow;
+}
+
+<h2>User Details</h2>
+
+<div class="card mb-3">
+    <div class="card-body">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        <p><strong>Username:</strong> @Model.UserName</p>
+        <p><strong>Email:</strong> @Model.Email</p>
+        <p><strong>Roles:</strong> @string.Join(", ", Model.Roles)</p>
+        <p>
+            <strong>Account Status:</strong>
+            @if (isLockedOut)
+            {
+                <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; padding: 4px 8px; border-radius: var(--radius-sm);">Locked Out / Inactive</span>
+            }
+            else
+            {
+                <span class="badge" style="background: rgba(34, 197, 94, 0.12); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3); font-weight: 600; padding: 4px 8px; border-radius: var(--radius-sm);">Active</span>
+            }
+        </p>
+        @if (isLockedOut && lockout.HasValue)
+        {
+            <p><strong>Lockout End:</strong> @lockout.Value.ToLocalTime().ToString("g")</p>
+        }
+    </div>
+</div>
+
+@* Inline recent audit logs *@
+@if (Model.AuditLogs != null && Model.AuditLogs.Any())
+{
+    <div class="card mb-3">
+        <div class="card-header">Recent Audit Events (latest 20)</div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>When (UTC)</th>
+                        <th>Action</th>
+                        <th>By</th>
+                        <th>Reason</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Model.AuditLogs)
+                    {
+                        <tr>
+                            <td>@l.Timestamp.ToString("g")</td>
+                            <td>@l.ActionType</td>
+                            <td>@l.PerformedBy</td>
+                            <td>@l.Reason</td>
+                            <td>@l.Details</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="d-flex align-items-center gap-2 flex-wrap mt-4">
+    <a asp-action="EditUser" asp-route-id="@Model.Id" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Edit User
+    </a>
+
+    @if (isLockedOut)
+    {
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#reactivateModal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Reactivate Account
+        </button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+            Deactivate (Lockout)
+        </button>
+    }
+
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        Reset Password
+    </button>
+
+    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Delete User
+    </a>
+
+    <a asp-action="AuditLogs" asp-route-q="@Model.UserName" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        View Audit Logs
+    </a>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Users
+    </a>
+</div>
+
+@* Reactivate confirmation modal *@
+<div class="modal fade" id="reactivateModal" tabindex="-1" aria-labelledby="reactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Reactivate">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reactivateModalLabel">Confirm Reactivate</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="mb-3">
+                        <label for="reasonReactivate" class="form-label">Reason (optional, max 500 chars)</label>
+                        <textarea id="reasonReactivate" name="reason" class="form-control" rows="3" maxlength="500" placeholder="Optional reason for reactivation"></textarea>
+                        <div class="form-text">This reason will be stored in the audit log.</div>
+                    </div>
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["Error"]</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Reactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Deactivate confirmation modal *@
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Deactivate">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deactivateModalLabel">Confirm Deactivate</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="mb-3">
+                        <label for="reasonModal" class="form-label">Reason (optional, max 500 chars)</label>
+                        <textarea id="reasonModal" name="reason" class="form-control" rows="3" maxlength="500" placeholder="Why are you deactivating this user?"></textarea>
+                        <div class="form-text">This reason will be stored in the audit log.</div>
+                    </div>
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["Error"]</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Confirm Deactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+  @* Reset Password confirmation modal *@
+  <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <form method="post" asp-action="ResetPassword">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="resetPasswordModalLabel">Reset User Password</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <input type="hidden" name="id" value="@Model.Id" />
+                      <div class="mb-3">
+                          <label for="reasonModalReset" class="form-label">Reason for Reset (Required)</label>
+                          <textarea id="reasonModalReset" name="reason" class="form-control" rows="3" maxlength="500" placeholder="Why are you resetting this user's password?" required></textarea>
+                      </div>
+                      <p class="text-muted" style="font-size: 0.9rem;">The password will be reset to a generic one-time password. The user will be forced to change it on their next login.</p>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-danger">Reset Password</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>

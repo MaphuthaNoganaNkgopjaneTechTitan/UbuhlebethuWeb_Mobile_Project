@@ -1,0 +1,466 @@
+@using UbuhlebethuConnectPro.WebApp.Models.Portfolio
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+
+@{
+    ViewData["Title"] = "Regional Project Distribution Map";
+    var zaCulture = System.Globalization.CultureInfo.GetCultureInfo("en-ZA");
+
+    // 1. Active Database Jobs
+    var activeJobs = (Model ?? Enumerable.Empty<UbuhlebethuConnectPro.Core.Models.Job>()).Select((j, idx) => new
+    {
+        id = j.Id.ToString(),
+        jobNumber = string.IsNullOrWhiteSpace(j.JobNumber) ? ("JOB-" + (idx + 1000)) : j.JobNumber,
+        title = string.IsNullOrWhiteSpace(j.Description) ? "Commercial Project" : j.Description,
+        category = string.IsNullOrWhiteSpace(j.BuildingType) ? "Building Construction" : j.BuildingType,
+        location = string.IsNullOrWhiteSpace(j.Location) ? "Johannesburg, South Africa" : j.Location.Trim(),
+        status = string.Equals(j.Status, "Completed", StringComparison.OrdinalIgnoreCase) || j.Progress >= 100 ? "Completed" : "In Progress",
+        isCompleted = string.Equals(j.Status, "Completed", StringComparison.OrdinalIgnoreCase) || j.Progress >= 100,
+        progress = j.Progress,
+        budget = "R " + j.EstimatedCost.ToString("N0", zaCulture),
+        siteManager = string.IsNullOrWhiteSpace(j.SiteManager) ? "Unassigned" : j.SiteManager,
+        itemType = "ActiveJob",
+        detailUrl = "/Dashboard/Details/" + j.Id
+    }).ToList();
+
+    // 2. Completed Portfolio Catalog Projects (uses Name/ProjectType safely without referencing non-existent Location)
+    var completedProjects = (PortfolioCatalog.All ?? Enumerable.Empty<PortfolioProject>()).Select(p => new
+    {
+        id = p.Slug ?? Guid.NewGuid().ToString(),
+        jobNumber = "Delivered",
+        title = p.Name ?? "Completed Building",
+        category = p.ProjectType ?? "Infrastructure",
+        location = string.IsNullOrWhiteSpace(p.Name) ? "Gauteng, South Africa" : (p.Name + ", South Africa"),
+        status = "Completed",
+        isCompleted = true,
+        progress = 100,
+        budget = "Delivered",
+        siteManager = "Ubuhlebethu PM",
+        itemType = "CompletedPortfolio",
+        detailUrl = "/#projects"
+    }).ToList();
+
+    var allItems = activeJobs.Concat(completedProjects).ToList();
+    var serializedAll = System.Text.Json.JsonSerializer.Serialize(allItems);
+
+    int countActive = activeJobs.Count(j => !j.isCompleted);
+    int countCompleted = completedProjects.Count + activeJobs.Count(j => j.isCompleted);
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+<style>
+    .map-dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    #mapContainer {
+        width: 100%;
+        height: 600px;
+        min-height: 600px;
+        border-radius: var(--radius-lg, 10px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--color-border, #e2e8f0);
+        z-index: 1;
+        background: #f1f5f9;
+    }
+
+    .project-sidebar-panel {
+        background: #ffffff;
+        border: 1px solid var(--color-border, #e2e8f0);
+        border-radius: var(--radius-lg, 10px);
+        padding: 14px;
+        max-height: 600px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .pin-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .pin-head-active {
+        background: #9b1c1c;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.7rem;
+        padding: 3px 7px;
+        border-radius: 999px;
+        box-shadow: 0 3px 8px rgba(155, 28, 28, 0.4);
+        border: 1.5px solid #ffffff;
+        white-space: nowrap;
+    }
+
+    .pin-head-completed {
+        background: #16a34a;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.7rem;
+        padding: 3px 7px;
+        border-radius: 999px;
+        box-shadow: 0 3px 8px rgba(22, 163, 74, 0.4);
+        border: 1.5px solid #ffffff;
+        white-space: nowrap;
+    }
+
+    .pin-arrow {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid #9b1c1c;
+    }
+
+    .pin-arrow-completed {
+        border-top-color: #16a34a;
+    }
+
+    .filter-btn-group {
+        display: inline-flex;
+        border: 1px solid var(--color-border, #cbd5e1);
+        border-radius: 6px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .filter-btn {
+        padding: 6px 14px;
+        border: none;
+        background: transparent;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-secondary, #475569);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .filter-btn.active {
+        background: #9b1c1c;
+        color: #fff;
+    }
+
+    .project-item-card {
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .project-item-card:hover {
+        border-color: #9b1c1c;
+        background: #fdf2f2;
+    }
+
+    @@media (max-width: 992px) {
+        .map-dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        .project-sidebar-panel {
+            max-height: 320px;
+        }
+    }
+</style>
+
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px;">
+    <div>
+        <h1 class="page-title">Regional Project Distribution</h1>
+        <p class="page-subtitle">Mapping active construction works and all completed infrastructure developments</p>
+    </div>
+
+    <!-- Filter Toggle Bar -->
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div class="filter-btn-group">
+            <button type="button" class="filter-btn active" onclick="applyProjectFilter('all', this)">
+                All (@allItems.Count)
+            </button>
+            <button type="button" class="filter-btn" onclick="applyProjectFilter('active', this)">
+                In Progress (@countActive)
+            </button>
+            <button type="button" class="filter-btn" onclick="applyProjectFilter('completed', this)">
+                Completed (@countCompleted)
+            </button>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" onclick="fitAllMarkers()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:4px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="22" y1="12" x2="18" y2="12"></line>
+                <line x1="6" y1="12" x2="2" y2="12"></line>
+                <line x1="12" y1="6" x2="12" y2="2"></line>
+                <line x1="12" y1="22" x2="12" y2="18"></line>
+            </svg>
+            Fit All
+        </button>
+    </div>
+</div>
+
+<div class="map-dashboard-grid mb-4">
+    <div id="mapContainer"></div>
+
+    <div class="project-sidebar-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:8px; margin-bottom:4px;">
+            <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted);">
+                Sites &amp; Buildings List
+            </span>
+            <span id="rosterCount" class="badge badge-neutral" style="font-size:0.72rem;">@allItems.Count visible</span>
+        </div>
+        <div id="siteRosterList"></div>
+    </div>
+</div>
+
+<!-- Summary Metrics Bar -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+    <div class="card p-3 shadow-sm border">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#9b1c1c; display:inline-block;"></span>
+            <h6 class="fw-bold mb-0" style="color:#9b1c1c;">Active Construction Jobs</h6>
+        </div>
+        <div class="fs-4 fw-bold mt-2">@countActive Live Projects</div>
+        <div class="small text-muted">Currently active on-site crews</div>
+    </div>
+
+    <div class="card p-3 shadow-sm border">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#16a34a; display:inline-block;"></span>
+            <h6 class="fw-bold mb-0" style="color:#16a34a;">Delivered Developments</h6>
+        </div>
+        <div class="fs-4 fw-bold mt-2">@countCompleted Buildings</div>
+        <div class="small text-muted">Finished schools, clinics &amp; conversions</div>
+    </div>
+
+    <div class="card p-3 shadow-sm border">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:#1d6fb8; display:inline-block;"></span>
+            <h6 class="fw-bold mb-0" style="color:#1d6fb8;">Delivery Experience</h6>
+        </div>
+        <div class="fs-4 fw-bold mt-2" style="color:#1d6fb8;">R200m+ Delivered</div>
+        <div class="small text-muted">Track record since 2002</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+    <script>
+        let mapInstance = null;
+        let siteEntries = [];
+        let currentFilter = 'all';
+
+        const rawData = @Html.Raw(serializedAll);
+
+        const regionalCoordinates = {
+            'mosunkwane': [-26.2485, 27.8631],
+            'soweto': [-26.2678, 27.8585],
+            'dobsonville': [-26.2167, 27.8667],
+            'roodepoort': [-26.1625, 27.8725],
+            'johannesburg': [-26.2041, 28.0473],
+            'joburg': [-26.2041, 28.0473],
+            'sandton': [-26.1076, 28.0567],
+            'midrand': [-25.9992, 28.1263],
+            'rosebank': [-26.1458, 28.0417],
+            'pretoria': [-25.7479, 28.2293],
+            'tshwane': [-25.7479, 28.2293],
+            'durban': [-29.8587, 31.0218],
+            'kwaggastroom': [-26.8500, 29.8000],
+            'cape town': [-33.9249, 18.4241],
+            'polokwane': [-23.9045, 29.4688],
+            'gqeberha': [-33.9608, 25.6022],
+            'bloemfontein': [-29.0852, 26.1596]
+        };
+
+        function computeLocationCoords(item, index, duplicateCount) {
+            const locText = ((item.location || '') + ' ' + (item.title || '')).toLowerCase();
+            let base = [-26.2041, 28.0473];
+
+            for (const key in regionalCoordinates) {
+                if (locText.includes(key)) {
+                    base = regionalCoordinates[key];
+                    break;
+                }
+            }
+
+            // Radial distribution to prevent markers from stacking at the exact same pixel
+            if (duplicateCount > 1) {
+                const angle = (index * (360 / duplicateCount)) * (Math.PI / 180);
+                const radius = 0.024;
+                return [
+                    base[0] + (Math.sin(angle) * radius),
+                    base[1] + (Math.cos(angle) * radius)
+                ];
+            }
+
+            return base;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            mapInstance = L.map('mapContainer', {
+                scrollWheelZoom: true
+            }).setView([-26.2041, 28.0473], 10);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors | Ubuhlebethu ConnectPro'
+            }).addTo(mapInstance);
+
+            const locationCounts = {};
+            rawData.forEach(item => {
+                const loc = ((item.location || '') + ' ' + (item.title || '')).toLowerCase();
+                let key = 'other';
+                for (const k in regionalCoordinates) {
+                    if (loc.includes(k)) { key = k; break; }
+                }
+                locationCounts[key] = (locationCounts[key] || 0) + 1;
+            });
+
+            const locationIndices = {};
+            siteEntries = [];
+
+            rawData.forEach(item => {
+                const loc = ((item.location || '') + ' ' + (item.title || '')).toLowerCase();
+                let key = 'other';
+                for (const k in regionalCoordinates) {
+                    if (loc.includes(k)) { key = k; break; }
+                }
+                const currentIdx = locationIndices[key] || 0;
+                locationIndices[key] = currentIdx + 1;
+
+                const coords = computeLocationCoords(item, currentIdx, locationCounts[key]);
+
+                const pinClass = item.isCompleted ? 'pin-head-completed' : 'pin-head-active';
+                const arrowClass = item.isCompleted ? 'pin-arrow pin-arrow-completed' : 'pin-arrow';
+                const badgeLabel = (item.jobNumber || 'Site').length > 9 
+                    ? (item.jobNumber || 'Site').substring(0, 9) 
+                    : (item.jobNumber || 'Site');
+
+                const markerHtml = `
+                    <div class="pin-wrap">
+                        <div class="${pinClass}">${badgeLabel}</div>
+                        <div class="${arrowClass}"></div>
+                    </div>
+                `;
+
+                const icon = L.divIcon({
+                    className: 'custom-leaflet-pin',
+                    html: markerHtml,
+                    iconSize: [60, 30],
+                    iconAnchor: [30, 30],
+                    popupAnchor: [0, -28]
+                });
+
+                const marker = L.marker(coords, { icon: icon }).addTo(mapInstance);
+
+                const popupHtml = `
+                    <div style="font-family:'Inter',sans-serif; min-width:230px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <span style="font-size:0.75rem; font-weight:700; color:${item.isCompleted ? '#16a34a' : '#9b1c1c'};">${item.jobNumber}</span>
+                            <span style="font-size:0.7rem; background:${item.isCompleted ? '#dcfce7' : '#fee2e2'}; color:${item.isCompleted ? '#16a34a' : '#9b1c1c'}; font-weight:700; padding:2px 7px; border-radius:10px;">
+                                ${item.isCompleted ? 'Completed' : item.progress + '% Done'}
+                            </span>
+                        </div>
+                        <h6 style="font-weight:700; margin:0 0 4px 0; font-size:0.92rem; color:#0f172a;">${item.title}</h6>
+                        <div style="font-size:0.78rem; color:#64748b; margin-bottom:6px;">📍 ${item.location}</div>
+                        <div style="font-size:0.78rem; margin-bottom:8px; color:#334155;">
+                            <strong>Type:</strong> ${item.category}<br/>
+                            ${item.itemType === 'ActiveJob' ? `<strong>Budget:</strong> ${item.budget} &bull; <strong>Manager:</strong> ${item.siteManager}` : '<strong>Track Record:</strong> Delivered Building'}
+                        </div>
+                        <a href="${item.detailUrl}" class="btn btn-sm" style="width:100%; text-align:center; display:block; padding:6px 0; font-size:0.75rem; text-decoration:none; background:${item.isCompleted ? '#16a34a' : '#9b1c1c'}; border-radius:4px; color:#fff;">
+                            ${item.itemType === 'ActiveJob' ? 'Open Project File &rarr;' : 'View Portfolio Building &rarr;'}
+                        </a>
+                    </div>
+                `;
+
+                marker.bindPopup(popupHtml);
+
+                siteEntries.push({
+                    marker: marker,
+                    data: item,
+                    coords: coords
+                });
+            });
+
+            renderSidebar();
+            fitAllMarkers();
+            setTimeout(() => { mapInstance.invalidateSize(); }, 250);
+        });
+
+        function renderSidebar() {
+            const list = document.getElementById('siteRosterList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            let count = 0;
+            siteEntries.forEach(entry => {
+                const item = entry.data;
+                const visible = (currentFilter === 'all') ||
+                                (currentFilter === 'active' && !item.isCompleted) ||
+                                (currentFilter === 'completed' && item.isCompleted);
+
+                if (visible) {
+                    count++;
+                    const card = document.createElement('div');
+                    card.className = 'project-item-card';
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:${item.isCompleted ? '#16a34a' : '#9b1c1c'}; font-size:0.8rem;">${item.jobNumber}</strong>
+                            <span class="badge ${item.isCompleted ? 'badge-success' : 'badge-danger'}" style="font-size:0.68rem;">
+                                ${item.isCompleted ? 'Completed' : item.progress + '%'}
+                            </span>
+                        </div>
+                        <div style="font-size:0.82rem; font-weight:600; color:#0f172a; margin-top:2px;">${item.title}</div>
+                        <div style="font-size:0.74rem; color:#64748b; margin-top:2px;">📍 ${item.location}</div>
+                    `;
+                    card.onclick = () => {
+                        mapInstance.flyTo(entry.coords, 14, { duration: 1.2 });
+                        entry.marker.openPopup();
+                    };
+                    list.appendChild(card);
+                }
+            });
+
+            const rosterCount = document.getElementById('rosterCount');
+            if (rosterCount) rosterCount.textContent = count + ' visible';
+        }
+
+        function applyProjectFilter(filterType, btn) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            siteEntries.forEach(entry => {
+                const item = entry.data;
+                const visible = (filterType === 'all') ||
+                                (filterType === 'active' && !item.isCompleted) ||
+                                (filterType === 'completed' && item.isCompleted);
+
+                if (visible) {
+                    if (!mapInstance.hasLayer(entry.marker)) mapInstance.addLayer(entry.marker);
+                } else {
+                    if (mapInstance.hasLayer(entry.marker)) mapInstance.removeLayer(entry.marker);
+                }
+            });
+
+            renderSidebar();
+            fitAllMarkers();
+        }
+
+        function fitAllMarkers() {
+            if (!mapInstance) return;
+            const visible = siteEntries
+                .filter(e => mapInstance.hasLayer(e.marker))
+                .map(e => e.marker);
+
+            if (visible.length > 0) {
+                const group = new L.featureGroup(visible);
+                mapInstance.fitBounds(group.getBounds().pad(0.18));
+            }
+        }
+    </script>
+}

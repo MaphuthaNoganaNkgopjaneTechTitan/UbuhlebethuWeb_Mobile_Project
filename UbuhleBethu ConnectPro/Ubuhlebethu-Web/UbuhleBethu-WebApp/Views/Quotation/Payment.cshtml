@@ -1,0 +1,80 @@
+@model UbuhlebethuConnectPro.WebApp.ApiClient.QuoteDto
+@{
+    ViewData["Title"] = "Secure Payment Simulation";
+    var refCode = Model?.Reference ?? "Q-2023-104";
+    var amount = Model?.EstimatedBudget ?? 145000.00M;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Secure Payment Simulation</h1>
+        <p class="page-subtitle">Settle outstanding invoices safely and securely.</p>
+    </div>
+</div>
+
+<div class="data-table-wrap" style="max-width: 600px; margin: 0 auto; padding: 24px;">
+    
+    <div style="text-align: center; margin-bottom: 24px;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--color-info-bg); display: inline-flex; align-items: center; justify-content: center; color: var(--color-info); margin-bottom: 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+        </div>
+        <h2 style="margin: 0 0 8px 0; color: var(--text-main); font-weight: 600;">Payment Gateway (Simulated)</h2>
+        <p style="color: var(--text-secondary); margin: 0;">Quotation Ref: <strong>@refCode</strong></p>
+        <h3 style="color: var(--color-primary); font-size: 1.8rem; margin: 12px 0 0 0;">@amount.ToString("C")</h3>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" style="margin-bottom: 16px; padding: 12px; border-radius: 6px;">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <form method="post" asp-controller="Quotation" asp-action="ProcessPayment" asp-route-id="@Model?.Id">
+        @Html.AntiForgeryToken()
+        <div style="background: #faf8f8; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 24px;">
+            <div class="mb-3">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">Cardholder Name</label>
+                <input type="text" name="cardHolder" class="form-control" placeholder="John Doe" value="@(Model?.ClientName ?? "Test Cardholder")" required />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">Card Number</label>
+                <div style="position: relative;">
+                    <input type="text" name="cardNumber" class="form-control" placeholder="4242 •••• •••• 4242" value="4242 •••• •••• 4242" style="padding-left: 40px;" required />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; position: absolute; left: 12px; top: 10px; color: var(--text-muted);">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">Expiry Date</label>
+                    <input type="text" name="expiry" class="form-control" placeholder="12/28" value="12/28" required />
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">CVV</label>
+                    <input type="text" name="cvv" class="form-control" placeholder="123" value="123" required />
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" style="font-size: 1rem; padding: 12px;">
+            Simulate Payment of @amount.ToString("C")
+        </button>
+    </form>
+    <div style="text-align: center; margin-top: 16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; color: var(--color-success); vertical-align: middle; margin-right: 4px;">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span style="font-size: 0.8rem; color: var(--text-muted); vertical-align: middle;">Secured by 256-bit encryption</span>
+    </div>
+
+</div>
+

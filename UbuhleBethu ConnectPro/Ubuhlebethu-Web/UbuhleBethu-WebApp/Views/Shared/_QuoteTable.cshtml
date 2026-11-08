@@ -1,0 +1,40 @@
+@using UbuhlebethuConnectPro.WebApp.ApiClient
+@model IEnumerable<QuoteDto>
+@functions {
+    static string Badge(string status) => status switch
+    {
+        "Submitted" => "badge-submitted",
+        "Reviewed" => "badge-info",
+        "Approved" or "Invoiced" => "badge-primary",
+        "Paid" => "badge-success",
+        "Rejected" => "badge-danger",
+        _ => "badge-neutral"
+    };
+}
+<div class="data-table-wrap">
+    <table class="data-table">
+        <caption class="visually-hidden" style="position:absolute;left:-9999px">Client proposals</caption>
+        <thead>
+            <tr><th scope="col">Reference</th><th scope="col">Client</th><th scope="col">Project of interest</th><th scope="col">Submitted</th><th scope="col">Estimate</th><th scope="col">Doc</th><th scope="col">Status</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr>
+        </thead>
+        <tbody>
+        @foreach (var q in Model)
+        {
+            <tr>
+                <td class="td-mono">@q.Reference</td>
+                <td class="td-primary">@q.ClientName<br /><small class="text-muted">@(string.IsNullOrWhiteSpace(q.Company) ? q.Email : q.Company)</small></td>
+                <td>@(string.IsNullOrWhiteSpace(q.ReferenceProject) ? q.ProjectType : q.ReferenceProject)</td>
+                <td>@q.RequestDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                <td>@(q.EstimatedBudget > 0 ? "ZAR " + q.EstimatedBudget.ToString("N0") : "—")</td>
+                <td>@(q.HasDocument ? "📎" : "—")</td>
+                <td><span class="badge @Badge(q.Status)">@q.Status</span></td>
+                <td><a class="btn btn-sm btn-secondary" asp-controller="Office" asp-action="PreviewQuote" asp-route-id="@q.Id">Open</a></td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="8" class="text-center text-muted" style="padding:2rem">Nothing here yet.</td></tr>
+        }
+        </tbody>
+    </table>
+</div>

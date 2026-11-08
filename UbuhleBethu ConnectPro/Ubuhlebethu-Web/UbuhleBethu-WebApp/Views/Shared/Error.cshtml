@@ -1,0 +1,41 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = Model.StatusCode.HasValue ? $"Error {Model.StatusCode}" : "Error";
+}
+
+<div class="card p-4 my-5 shadow-sm" style="max-width: 680px; margin: 40px auto; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0);">
+    <div class="text-center mb-4">
+        <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700;">
+            @(Model.StatusCode?.ToString() ?? "!")
+        </div>
+        <h2 class="text-danger fw-bold mb-2">
+            @(Model.StatusCode == 400 ? "400 — Bad Request" :
+              Model.StatusCode == 404 ? "404 — Page Not Found" :
+              Model.StatusCode == 403 ? "403 — Access Denied" :
+              "System Notice")
+        </h2>
+        <p class="text-muted" style="font-size: 0.95rem; line-height: 1.6;">
+            @(Model.Message ?? (Model.StatusCode == 400
+                ? "The server could not process the request. This can occur if a security token expired or required options were left empty. Please return to the previous page and try again."
+                : Model.StatusCode == 404
+                ? "The resource or page you requested could not be found."
+                : "An unexpected error occurred while processing your request."))
+        </p>
+    </div>
+
+    @if (Model.ShowRequestId)
+    {
+        <div class="alert alert-light border small text-center text-muted mb-4">
+            <strong>Diagnostic Trace ID:</strong> <code>@Model.RequestId</code>
+        </div>
+    }
+
+    <div class="d-flex justify-content-center gap-3">
+        <a href="javascript:history.back()" class="btn btn-secondary">
+            &larr; Return to Previous Page
+        </a>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+            Return to Dashboard
+        </a>
+    </div>
+</div>

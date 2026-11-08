@@ -1,0 +1,333 @@
+@model UbuhlebethuConnectPro.WebApp.ApiClient.QuoteDto
+@{
+    ViewData["Title"] = "Quotation — " + Model.Reference;
+    string statusBadge = Model.Status switch
+    {
+        "Approved" => "badge-success",
+        "Paid" => "badge-success",
+        "Invoiced" => "badge-primary",
+        "ManagerApproved" => "badge-info",
+        "Under Review" => "badge-warning",
+        "Submitted" => "badge-submitted",
+        "Rejected" => "badge-danger",
+        _ => "badge-neutral"
+    };
+}
+
+<!-- Role-Aware Back Navigation (Eliminates 403 Access Denied) -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+    @if (User.IsInRole("Office") || User.IsInRole("OfficeStaff"))
+    {
+        <a asp-controller="Dashboard" asp-action="PendingQuotes" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Pending Quotes
+        </a>
+    }
+    else if (User.IsInRole("Manager") || User.IsInRole("Management") || User.IsInRole("Executive"))
+    {
+        <a asp-controller="Manager" asp-action="ReviewQuotes" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Review Quotes
+        </a>
+    }
+    else if (User.IsInRole("Admin") || User.IsInRole("SystemAdmin"))
+    {
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Administration
+        </a>
+    }
+    else
+    {
+        <a asp-controller="Dashboard" asp-action="ClientPortal" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Portal
+        </a>
+    }
+
+    <div style="font-size:0.78rem; color:var(--text-muted);">
+        Quotations &rsaquo; <strong style="color:var(--text-primary);">@Model.Reference</strong>
+    </div>
+</div>
+
+<!-- Page header -->
+<div class="page-header" style="margin-bottom:16px;">
+    <div>
+        <h1 class="page-title">Quotation @Model.Reference</h1>
+        <p class="page-subtitle">Submitted @Model.RequestDate.ToLocalTime().ToString("dd MMM yyyy")</p>
+    </div>
+    <div class="page-actions">
+        <span class="badge @statusBadge" style="font-size:0.75rem; padding:5px 12px;">@Model.Status</span>
+        @if (Model.Status == "Approved" || Model.Status == "Invoiced")
+        {
+            @if (User.IsInRole("Client"))
+            {
+                <a class="btn btn-action-green btn-sm" asp-controller="Quotation" asp-action="Payment" asp-route-id="@Model.Id" style="display:inline-flex; align-items:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:4px;">
+                        <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                    Make Payment
+                </a>
+            }
+        }
+        @if (Model.InvoiceId.HasValue)
+        {
+            <a asp-controller="Invoice" asp-action="Preview" asp-route-id="@Model.InvoiceId" target="_blank" class="btn btn-secondary btn-sm">Preview Invoice</a>
+            <a asp-controller="Invoice" asp-action="Download" asp-route-id="@Model.InvoiceId" class="btn btn-primary btn-sm">Download Invoice</a>
+        }
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+    <!-- Quotation Details -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Quotation Details</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+            <div style="padding:0 20px;">
+                <div class="detail-field">
+                    <div class="detail-key">Reference</div>
+                    <div class="detail-val td-primary">@Model.Reference</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-key">Client</div>
+                    <div class="detail-val">@Model.ClientName</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-key">Project Type</div>
+                    <div class="detail-val">@Model.ProjectType</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-key">Site Location</div>
+                    <div class="detail-val">@Model.SiteLocation</div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-key">Estimate</div>
+                    <div class="detail-val fw-600" style="color:var(--color-primary); font-size:0.9rem;">
+                        R @Model.EstimatedBudget.ToString("N2")
+                    </div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-key">Status</div>
+                    <div class="detail-val"><span class="badge @statusBadge">@Model.Status</span></div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-key">Date Submitted</div>
+                    <div class="detail-val">@Model.RequestDate.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scope & Status Message -->
+    <div>
+        <div class="card mb-3">
+            <div class="card-header">
+                <span class="card-title">Scope of Work</span>
+            </div>
+            <div class="card-body">
+                <div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.6;">
+                    @(string.IsNullOrEmpty(Model.ProjectDescription) ? "No scope description provided." : Model.ProjectDescription)
+                </div>
+            </div>
+        </div>
+
+        @if (Model.IsPaid)
+        {
+            <div class="alert alert-success">Payment received. Invoice ID: #@Model.InvoiceId</div>
+        }
+        else if (Model.Status == "Under Review")
+        {
+            <div class="card" style="background:#fffbeb; border:1px solid #fef3c7;">
+                <div class="card-body">
+                    <div style="font-size:0.78rem; font-weight:700; color:#b45309; margin-bottom:6px;">Under Review</div>
+                    <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.5;">
+                        Your quotation is currently being reviewed by Management. You will receive an update once a decision is made.
+                    </div>
+                </div>
+            </div>
+        }
+        else if (Model.Status == "ManagerApproved")
+        {
+            <div class="card" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                <div class="card-body">
+                    <div style="font-size:0.78rem; font-weight:700; color:#15803d; margin-bottom:6px;">Manager Approved</div>
+                    <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.5;">
+                        Management approved the estimate of <strong>R @Model.EstimatedBudget.ToString("N2")</strong>. Our QS team is finalizing the invoice for you.
+                    </div>
+                </div>
+            </div>
+        }
+        else if (Model.Status == "Approved" || Model.Status == "Invoiced")
+        {
+            <div class="card" style="background:var(--color-success-bg); border-color:#bbf7d0;">
+                <div class="card-body">
+                    <div style="font-size:0.78rem; font-weight:700; color:var(--color-success); margin-bottom:8px;">Quotation Approved &amp; Invoiced</div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary); line-height:1.5;">
+                        Your quotation has been approved and an invoice has been generated according to the estimated budget.
+                    </div>
+                </div>
+            </div>
+        }
+        else if (Model.Status == "Rejected")
+        {
+            <div class="card" style="background:#fef2f2; border:1px solid #fecaca;">
+                <div class="card-body">
+                    <div style="font-size:0.78rem; font-weight:700; color:#b91c1c; margin-bottom:6px;">Quotation Rejected by Management</div>
+                    <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.5;">
+                        Quotation was returned by the Manager for scope or budget adjustment.
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card" style="background:var(--color-content-bg); border:1px solid var(--color-border);">
+                <div class="card-body">
+                    <div style="font-size:0.78rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Awaiting Review</div>
+                    <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.5;">
+                        Quotation request received and is being prepared by our quantity surveying team.
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* ───────────────────────────────────────────────────────────── *@
+@* 1. OFFICE & QS ACTIONS PANEL (Excludes Admin)                 *@
+@* ───────────────────────────────────────────────────────────── *@
+@if (User.IsInRole("Office") || User.IsInRole("OfficeStaff"))
+{
+    <div class="card" style="margin-top:20px; border: 1.5px solid var(--color-border, #e2e8f0);">
+        <div class="card-header" style="background-color: var(--color-primary, #b91c1c); color: white;">
+            <span class="card-title text-white">Office &amp; QS Actions</span>
+        </div>
+        <div class="card-body">
+            @if (Model.Status == "Draft" || Model.Status == "Submitted")
+            {
+                <p class="text-muted small">Review/adjust the estimate and send this quotation to the Manager for sign-off:</p>
+                <form method="post" asp-controller="Office" asp-action="SendToManager" asp-route-id="@Model.Id" style="display:flex; gap:10px; align-items:center;">
+                    @Html.AntiForgeryToken()
+                    <div style="max-width:200px;">
+                        <input type="number" step="0.01" name="estimatedBudget" class="form-control form-control-sm" value="@Model.EstimatedBudget" />
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm">Send to Manager for Sign-Off</button>
+                </form>
+            }
+            else if (Model.Status == "Under Review")
+            {
+                <div class="alert alert-warning mb-0 small">
+                    <strong>Pending Sign-off:</strong> This quotation has been submitted to Management and is awaiting their approval or rejection.
+                </div>
+            }
+            else if (Model.Status == "ManagerApproved")
+            {
+                <div class="alert alert-success small mb-3">
+                    <strong>Manager Approved:</strong> Sign-off complete! Issue the final invoice for <strong>R @Model.EstimatedBudget.ToString("N2")</strong> to the client:
+                </div>
+                <form method="post" asp-controller="Office" asp-action="SendFeedback" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Quantity Surveyor Remarks &amp; Terms:</label>
+                        <textarea name="feedback" class="form-control form-control-sm" rows="2" placeholder="e.g. Scope verified and bill of quantities finalized. Please find invoice attached."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:6px;vertical-align:text-top;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Send Estimated Invoice (R @Model.EstimatedBudget.ToString("N2")) to Client
+                    </button>
+                </form>
+            }
+            else if (Model.Status == "Rejected")
+            {
+                <div class="alert alert-danger small mb-3">
+                    <strong>Manager Declined:</strong> This quotation was rejected by the Manager. Revise estimate and scope to resubmit.
+                </div>
+                <form method="post" asp-controller="Office" asp-action="SendToManager" asp-route-id="@Model.Id" style="display:flex; gap:10px; align-items:center;">
+                    @Html.AntiForgeryToken()
+                    <div style="max-width:200px;">
+                        <input type="number" step="0.01" name="estimatedBudget" class="form-control form-control-sm" value="@Model.EstimatedBudget" />
+                    </div>
+                    <button type="submit" class="btn btn-outline-warning btn-sm">Resubmit to Manager</button>
+                </form>
+            }
+            else if (Model.Status == "Invoiced" || Model.Status == "Approved")
+            {
+                <div class="text-success small fw-bold mb-2">Invoice issued to client for R @Model.EstimatedBudget.ToString("N2").</div>
+                @if (Model.InvoiceId.HasValue)
+                {
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Invoice" asp-action="Preview" asp-route-id="@Model.InvoiceId" target="_blank" class="btn btn-secondary btn-sm">Preview Invoice</a>
+                        <a asp-controller="Invoice" asp-action="Download" asp-route-id="@Model.InvoiceId" class="btn btn-primary btn-sm">Download Invoice</a>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+@* ───────────────────────────────────────────────────────────── *@
+@* 2. MANAGER ACTIONS PANEL (Excludes Admin)                     *@
+@* ───────────────────────────────────────────────────────────── *@
+@if (User.IsInRole("Manager") || User.IsInRole("Management") || User.IsInRole("Executive"))
+{
+    @if (Model.Status == "Under Review" || Model.Status == "Submitted")
+    {
+        <div class="card" style="margin-top:20px; border:2px solid #2563eb;">
+            <div class="card-header" style="background-color:#2563eb; color:white;">
+                <span class="card-title text-white">Manager Approval &amp; Sign-Off</span>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Review estimate of <strong>R @Model.EstimatedBudget.ToString("N2")</strong> submitted for <strong>@Model.ClientName</strong>:</p>
+                <div style="display:flex; gap:10px;">
+                    <form method="post" asp-controller="Manager" asp-action="AcceptQuote" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success btn-sm">Accept Quotation</button>
+                    </form>
+
+                    <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('rejectBox').style.display='block';">Reject Quotation</button>
+                </div>
+
+                <div id="rejectBox" style="display:none; margin-top:15px; padding:12px; border:1px solid #fecaca; background:#fef2f2; border-radius:6px;">
+                    <form method="post" asp-controller="Manager" asp-action="RejectQuote" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <label class="form-label small fw-bold text-danger">State Reason for Rejection (Required):</label>
+                        <textarea name="reason" class="form-control form-control-sm mb-2" rows="2" required placeholder="e.g. Budget exceeds threshold; revise scope with client."></textarea>
+                        <div style="display:flex; gap:8px;">
+                            <button type="submit" class="btn btn-danger btn-sm">Confirm Rejection</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rejectBox').style.display='none';">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@* ───────────────────────────────────────────────────────────── *@
+@* 3. SYSTEM ADMINISTRATOR AUDIT OVERVIEW (Admin Only)           *@
+@* ───────────────────────────────────────────────────────────── *@
+@if (User.IsInRole("Admin") || User.IsInRole("SystemAdmin"))
+{
+    <div class="card mt-4" style="border: 1px dashed #64748b; background: #f8fafc;">
+        <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center">
+            <div>
+                <strong style="font-size: 0.88rem; color: #334155;">System Administrator Read-Only Audit View</strong>
+                <p class="text-muted small mb-0">Direct quote pricing, managerial approvals, and invoice issuance are reserved for Office/QS and Management roles.</p>
+            </div>
+            <span class="badge bg-secondary" style="font-size: 0.75rem;">Audit Mode</span>
+        </div>
+    </div>
+}

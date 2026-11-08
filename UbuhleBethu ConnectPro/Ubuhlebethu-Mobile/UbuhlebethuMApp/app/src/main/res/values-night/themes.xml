@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Base application theme for Night (Dark) mode.
+        Inherits from Material3 DayNight component theme without ActionBar.
+        Overrides light mode color roles with dark mode color tokens from values-night/colors.xml.
+    -->
+    <style name="Base.Theme.UbuhlebethuMApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary Brand Colors (Dark Mode) -->
+        <item name="colorPrimary">@color/ubuhlebethu_red</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryContainer</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer</item>
+
+        <!-- Secondary Brand Colors (Dark Mode) -->
+        <item name="colorSecondary">@color/ubuhlebethu_dark_red</item>
+        <item name="colorSecondaryContainer">@color/colorSecondaryContainer</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary</item>
+        <item name="colorOnSecondaryContainer">@color/colorOnSecondaryContainer</item>
+
+        <!-- Tertiary Accent Colors (Dark Mode) -->
+        <item name="colorTertiary">@color/colorTertiary</item>
+        <item name="colorTertiaryContainer">@color/colorTertiaryContainer</item>
+        <item name="colorOnTertiary">@color/colorOnTertiary</item>
+        <item name="colorOnTertiaryContainer">@color/colorOnTertiaryContainer</item>
+
+        <!-- Error & Validation Colors (Dark Mode) -->
+        <item name="colorError">@color/colorError</item>
+        <item name="colorErrorContainer">@color/colorErrorContainer</item>
+        <item name="colorOnError">@color/colorOnError</item>
+        <item name="colorOnErrorContainer">@color/colorOnErrorContainer</item>
+
+        <!-- Surface Elevation & Container Colors (Dark Mode) -->
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant</item>
+        <item name="colorSurfaceContainer">@color/colorSurfaceContainer</item>
+        <item name="colorSurfaceContainerHigh">@color/colorSurfaceContainerHigh</item>
+        <item name="colorSurfaceContainerHighest">@color/colorSurfaceContainerHighest</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant</item>
+
+        <!-- Background Colors (Dark Mode) -->
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="colorOnBackground">@color/colorOnSurface</item>
+
+        <!-- High-Contrast Typography mapping for system views (Spinners, Dialogs) -->
+        <item name="android:textColorPrimary">@color/colorTextPrimary</item>
+        <item name="android:textColorSecondary">@color/colorTextSecondary</item>
+
+        <!-- Outline & Boundary Colors (Dark Mode) -->
+        <item name="colorOutline">@color/colorOutline</item>
+        <item name="colorOutlineVariant">@color/colorOutlineVariant</item>
+    </style>
+
+    <!-- Public Application Theme entry point for Night mode -->
+    <style name="Theme.UbuhlebethuMApp" parent="Base.Theme.UbuhlebethuMApp" />
+</resources>

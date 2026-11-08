@@ -1,0 +1,92 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.QuoteRequest>
+@{
+    ViewData["Title"] = "Track My Quotes";
+}
+
+<div class="page-header">
+    <h1 class="page-title">Track My Quotations</h1>
+    <p class="page-subtitle">Live status of all submitted quotation requests</p>
+</div>
+
+<div class="metric-strip">
+    <div class="metric-item">
+        <span class="kpi-label">Total Submitted</span>
+        <span class="kpi-value">@Model.Count()</span>
+    </div>
+    <div class="metric-item">
+        <span class="kpi-label">Under Review</span>
+        <span class="kpi-value">@Model.Count(q => q.Status == "Reviewed" || q.Status == "Submitted")</span>
+    </div>
+    <div class="metric-item">
+        <span class="kpi-label">Approved</span>
+        <span class="kpi-value">@Model.Count(q => q.Status == "Approved" || q.Status == "Paid")</span>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="data-table-wrap">
+        <div class="data-table-header">
+            <input type="text" class="form-control" placeholder="Search..." style="max-width: 300px;" />
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Project Type</th>
+                    <th>Site Location</th>
+                    <th>Date Submitted</th>
+                    <th>Status</th>
+                    <th>Estimate</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Reference</td>
+                        <td>@item.ProjectType</td>
+                        <td>@item.SiteLocation</td>
+                        <td>@item.RequestDate.ToString("MMM dd, yyyy")</td>
+                        <td>
+                            @{
+                                string badgeClass = item.Status switch
+                                {
+                                    "Approved" => "badge-success",
+                                    "Paid" => "badge-success",
+                                    "Declined" => "badge-danger",
+                                    "Submitted" => "badge-primary",
+                                    "Reviewed" => "badge-info",
+                                    _ => "badge-neutral"
+                                };
+                            }
+                            <span class="badge @badgeClass">@item.Status</span>
+                        </td>
+                        <td>R @item.EstimatedBudget.ToString("N2")</td>
+                        <td>
+                            <a href="/Quotation/Details/@item.Id" class="btn btn-secondary btn-sm">View Details</a>
+                            @if (item.Status == "Approved" || item.Status == "Invoiced")
+                            {
+                                <a href="/Quotation/Payment/@item.Id" class="btn btn-action-blue btn-sm">Pay Now</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div style="text-align: center; padding: 40px;">
+        <div style="margin-bottom: 16px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6c757d;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        </div>
+        <h3 style="color: #333; margin-bottom: 16px;">No quotations submitted yet</h3>
+        <a href="/Quotation/Create" class="btn btn-primary">Submit Your First Quote</a>
+    </div>
+}

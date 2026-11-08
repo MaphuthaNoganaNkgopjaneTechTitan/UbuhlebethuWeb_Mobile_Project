@@ -1,0 +1,148 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Audit Log";
+    var items = Model.Items as IEnumerable<UbuhlebethuConnectPro.Core.Models.AuditLog> ?? new List<UbuhlebethuConnectPro.Core.Models.AuditLog>();
+    int page = Model.Page;
+    int totalPages = Model.TotalPages;
+    string query = Model.Query ?? "";
+}
+
+<style>
+    /* Ensures clean horizontal alignment matching standard data tables */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .data-table thead tr {
+            background: #f8fafc;
+            border-bottom: 2px solid var(--color-border, #e2e8f0);
+        }
+
+        .data-table th {
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted, #64748b);
+            text-align: left;
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--color-border, #f1f5f9);
+            transition: background-color 0.15s ease;
+        }
+
+            .data-table tbody tr:hover {
+                background-color: #f8fafc;
+            }
+
+        .data-table td {
+            padding: 12px 16px;
+            font-size: 0.84rem;
+            color: var(--text-primary, #1e293b);
+            vertical-align: middle;
+        }
+</style>
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">System Audit Log</h1>
+        <p class="page-subtitle">Complete trail of all administrative actions in the system</p>
+    </div>
+    <div class="page-actions">
+        <a href="/Admin/Index" class="btn btn-secondary">Back to User Management</a>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm border">
+    <div class="card-body">
+        <form method="get" action="/Admin/AuditLogs" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control w-50" placeholder="Filter by user, action, or details..." value="@query" />
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="/Admin/ExportAuditLogs?q=@query" class="btn btn-secondary ms-auto">Export Log</a>
+        </form>
+    </div>
+</div>
+
+<div class="data-table-wrap card shadow-sm border overflow-hidden">
+    @if (!items.Any())
+    {
+        <div class="text-center p-5">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9b1c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-3">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <h3 class="h5">No audit log entries found</h3>
+            <p class="text-muted">There are no matching audit log records to display.</p>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="min-width: 160px;">Timestamp</th>
+                        <th style="min-width: 140px;">Action Type</th>
+                        <th style="min-width: 140px;">Performed By</th>
+                        <th style="min-width: 160px;">Target User</th>
+                        <th style="min-width: 150px;">Reason</th>
+                        <th style="min-width: 200px;">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in items)
+                    {
+                        <tr>
+                            <td>@log.Timestamp.ToString("dd MMM yyyy HH:mm")</td>
+                            <td>
+                                @if (log.ActionType == "HardDeleteUser" || log.ActionType == "DeleteProjects" || log.ActionType == "DeactivateUser")
+                                {
+                                    <span class="badge badge-danger">@log.ActionType</span>
+                                }
+                                else if (log.ActionType == "ReactivateUser")
+                                {
+                                    <span class="badge badge-success">@log.ActionType</span>
+                                }
+                                else if (log.ActionType == "EditRoles")
+                                {
+                                    <span class="badge badge-warning">@log.ActionType</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral">@log.ActionType</span>
+                                }
+                            </td>
+                            <td><strong>@log.PerformedBy</strong></td>
+                            <td><span class="badge badge-neutral font-monospace">@log.TargetUserId</span></td>
+                            <td title="@log.Reason">
+                                @(log.Reason?.Length > 60 ? log.Reason.Substring(0, 57) + "..." : (string.IsNullOrWhiteSpace(log.Reason) ? "—" : log.Reason))
+                            </td>
+                            <td title="@log.Details">
+                                @(log.Details?.Length > 60 ? log.Details.Substring(0, 57) + "..." : (string.IsNullOrWhiteSpace(log.Details) ? "—" : log.Details))
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center border-top p-3 bg-white">
+                <span class="text-muted small">Page @(page) of @totalPages</span>
+                <div class="d-flex gap-2">
+                    @if (page > 1)
+                    {
+                        <a href="/Admin/AuditLogs?p=@(page - 1)&q=@query" class="btn btn-sm btn-secondary">Previous</a>
+                    }
+                    @if (page < totalPages)
+                    {
+                        <a href="/Admin/AuditLogs?p=@(page + 1)&q=@query" class="btn btn-sm btn-secondary">Next</a>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>

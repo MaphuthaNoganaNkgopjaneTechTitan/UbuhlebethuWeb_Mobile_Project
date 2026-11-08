@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<h2>Access Denied</h2>
+<p>You do not have permission to access this resource.</p>
+@if (!string.IsNullOrEmpty((string?)ViewData["ReturnUrl"]))
+{
+    <p>Return URL: @ViewData["ReturnUrl"]</p>
+}
+
+<p>
+    <a asp-controller="Account" asp-action="Login">Go to Login</a>
+</p>
+

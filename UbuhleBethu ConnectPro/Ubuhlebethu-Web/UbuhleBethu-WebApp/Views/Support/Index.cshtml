@@ -1,0 +1,189 @@
+@model IReadOnlyList<UbuhlebethuConnectPro.WebApp.ApiClient.SupportTicketDto>
+@{
+    ViewData["Title"] = "Support Tickets";
+    bool isClient = User.IsInRole("Client");
+    bool isManager = User.IsInRole("Manager") || User.IsInRole("Management") || User.IsInRole("Executive");
+    bool isOffice = User.IsInRole("Office") || User.IsInRole("OfficeStaff");
+    bool isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
+    bool isStaff = isManager || isOffice || isAdmin;
+}
+
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+    <div>
+        <h1 class="page-title">Support Tickets</h1>
+        <p class="page-subtitle">Track questions and requests routed to specific ConnectPro stakeholders.</p>
+    </div>
+    @if (isClient)
+    {
+        <a asp-action="Create" class="btn btn-primary" style="background:#9b1c1c; border-color:#9b1c1c;">New ticket</a>
+    }
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success mb-3" style="background:#dcfce7; color:#16a34a; padding:10px 14px; border-radius:6px; font-size:0.84rem;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger mb-3" style="background:#fee2e2; color:#dc2626; padding:10px 14px; border-radius:6px; font-size:0.84rem;">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Assigned Stakeholder</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Response</th>
+                @if (isStaff)
+                {
+                    <th style="text-align:right;">Action</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model == null || !Model.Any())
+            {
+                <tr>
+                    <td colspan="@(isStaff ? 6 : 5)" class="text-muted">No support tickets yet.</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var ticket in Model)
+                {
+                    string rawSubject = ticket.Subject ?? string.Empty;
+                    string displaySubject = rawSubject;
+                    string routedStakeholder = "Project Manager";
+
+                    if (rawSubject.StartsWith("[") && rawSubject.Contains("]"))
+                    {
+                        int endIdx = rawSubject.IndexOf(']');
+                        routedStakeholder = rawSubject.Substring(1, endIdx - 1);
+                        displaySubject = rawSubject.Substring(endIdx + 1).Trim();
+                    }
+
+                    bool canThisUserReply = false;
+                    if (routedStakeholder.Contains("Manager") && isManager) canThisUserReply = true;
+                    else if ((routedStakeholder.Contains("Office") || routedStakeholder.Contains("QS")) && isOffice) canThisUserReply = true;
+                    else if (routedStakeholder.Contains("Admin") && isAdmin) canThisUserReply = true;
+
+                    bool isResolved = string.Equals(ticket.Status, "Resolved", StringComparison.OrdinalIgnoreCase);
+
+                    <tr>
+                        <td style="max-width:320px;">
+                            <strong>@displaySubject</strong>
+                            <br />
+                            <span class="small text-muted" style="line-height:1.4; display:inline-block; margin-top:2px;">@(ticket.Description ?? string.Empty)</span>
+                        </td>
+                        <td>
+                            @if (routedStakeholder.Contains("Manager"))
+                            {
+                                <span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700;">Project Manager</span>
+                            }
+                            else if (routedStakeholder.Contains("Office") || routedStakeholder.Contains("QS"))
+                            {
+                                <span class="badge" style="background:#dbeafe; color:#1e40af; font-weight:700;">Office / QS</span>
+                            }
+                            else
+                            {
+                                <span class="badge" style="background:#f3e8ff; color:#6b21a8; font-weight:700;">System Admin</span>
+                            }
+                        </td>
+                        <td>@ticket.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</td>
+                        <td>
+                            <span class="badge @(isResolved ? "badge-success" : "badge-info")">
+                                @(ticket.Status ?? "Open")
+                            </span>
+                        </td>
+                        <td style="max-width:280px;">
+                            @if (string.IsNullOrWhiteSpace(ticket.Response))
+                            {
+                                <span class="text-muted small">Awaiting response</span>
+                            }
+                            else
+                            {
+                                <div style="font-size:0.82rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
+                                    @ticket.Response
+                                </div>
+                            }
+                        </td>
+                        @if (isStaff)
+                        {
+                            <td style="text-align:right;">
+                                @if (isResolved)
+                                {
+                                    <span class="badge badge-neutral" style="font-size:0.75rem;">Resolved</span>
+                                }
+                                else if (canThisUserReply)
+                                {
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm reply-btn"
+                                            data-ticket-id="@ticket.Id"
+                                            data-ticket-subject="@displaySubject">
+                                        Reply
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.75rem; border:1px solid #cbd5e1;">View Only</span>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Stakeholder Replies -->
+<div id="replyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:8px; width:100%; max-width:480px; padding:22px; box-shadow:0 10px 25px rgba(0,0,0,0.25);">
+        <h5 style="margin-top:0; color:#9b1c1c; font-weight:700; font-size:1.05rem;">Submit Official Stakeholder Response</h5>
+        <p id="modalTicketSubject" class="text-muted small mb-3" style="font-size:0.8rem;"></p>
+
+        <form asp-action="Respond" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="modalTicketId" name="id" />
+            <div class="form-group mb-3">
+                <label class="form-label" style="font-weight:600; font-size:0.8rem;">Response to Client:</label>
+                <textarea name="response" class="form-control" rows="4" required placeholder="Type the official answer or action taken..."></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="cancelReplyBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="background:#9b1c1c; border-color:#9b1c1c;">Submit Response</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('replyModal');
+        var modalId = document.getElementById('modalTicketId');
+        var modalSubject = document.getElementById('modalTicketSubject');
+        var cancelBtn = document.getElementById('cancelReplyBtn');
+
+        var buttons = document.querySelectorAll('.reply-btn');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].addEventListener('click', function () {
+                modalId.value = this.getAttribute('data-ticket-id');
+                modalSubject.innerText = 'Ticket: ' + this.getAttribute('data-ticket-subject');
+                modal.style.display = 'flex';
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+        }
+    });
+</script>

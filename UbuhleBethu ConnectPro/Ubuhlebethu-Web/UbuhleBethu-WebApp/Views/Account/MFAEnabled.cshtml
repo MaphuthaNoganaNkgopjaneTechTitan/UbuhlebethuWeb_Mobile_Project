@@ -1,0 +1,111 @@
+﻿@{
+    ViewData["Title"] = "MFA Enabled";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>MFA Enabled — Ubuhlebethu ConnectPro</title>
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+</head>
+
+<body class="login-page">
+
+    <div class="login-shell">
+
+        <div class="login-brand">
+
+            <div class="login-brand-logo">
+
+                <div class="login-brand-mark"
+                     style="background:transparent;">
+
+                    <img src="~/images/logo.png"
+                         alt="Ubuhlebethu Logo"
+                         style="width:100%;height:100%;object-fit:contain;" />
+
+                </div>
+
+                <div class="login-brand-name">
+                    Ubuhlebethu
+                    <small>ConnectPro</small>
+                </div>
+
+            </div>
+
+            <div class="login-tagline">
+                Secure<br />
+                Construction<br />
+                <em>Management</em>
+            </div>
+
+        </div>
+
+
+        <div class="login-form-panel">
+
+            <div class="login-form-inner">
+
+                <div style="text-align:center;">
+
+                    <div style="
+                        width:64px;
+                        height:64px;
+                        margin:0 auto 20px;
+                        border-radius:50%;
+                        background:#dcfce7;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:30px;">
+
+                        ✓
+
+                    </div>
+
+                    <div class="login-form-title">
+                        MFA enabled
+                    </div>
+
+                    <div class="login-form-sub"
+                         style="margin-top:10px;">
+
+                        Your ConnectPro account is now protected
+                        with multi-factor authentication.
+
+                    </div>
+
+                    <a href="@Url.Action("Login", "Account")"
+                       class="btn btn-primary w-100"
+                       style="
+                        display:block;
+                        margin-top:28px;
+                        padding:10px;
+                        text-decoration:none;">
+
+                        Continue to login
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

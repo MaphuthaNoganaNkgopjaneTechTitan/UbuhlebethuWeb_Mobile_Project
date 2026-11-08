@@ -1,0 +1,165 @@
+﻿@{
+    ViewData["Title"] = "Two-Factor Authentication";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div class="card shadow">
+                <div class="card-body">
+
+                    <h2 class="text-center mb-3">
+                        Verify your identity
+                    </h2>
+
+                    <p class="text-muted text-center">
+                        Enter the 6-digit code from your authenticator app.
+                    </p>
+
+                    <form asp-action="VerifyTwoFactor"
+                          asp-controller="Account"
+                          method="post">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="returnUrl"
+                               value="@ViewData["ReturnUrl"]" />
+
+                        @* Custom MFA error message *@
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="mfa-error-alert" role="alert">
+
+                                <div class="mfa-error-icon">
+                                    ✕
+                                </div>
+
+                                <div class="mfa-error-content">
+
+                                    <div class="mfa-error-title">
+                                        Verification failed
+                                    </div>
+
+                                    <div class="mfa-error-message">
+                                        @foreach (var error in ViewData.ModelState.Values
+                                            .SelectMany(v => v.Errors))
+                                        {
+                                            <div>@error.ErrorMessage</div>
+                                        }
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label for="code"
+                                   class="form-label">
+                                Authentication code
+                            </label>
+
+                            <input type="text"
+                                   id="code"
+                                   name="code"
+                                   class="form-control text-center"
+                                   inputmode="numeric"
+                                   autocomplete="one-time-code"
+                                   maxlength="6"
+                                   placeholder="123456"
+                                   required />
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="rememberMachine"
+                                   name="rememberMachine"
+                                   value="true" />
+
+                            <label class="form-check-label"
+                                   for="rememberMachine">
+                                Trust this device
+                            </label>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Verify
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<style>
+
+    /* MFA ERROR ALERT */
+
+    .mfa-error-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 14px 16px;
+        background-color: #fff1f2;
+        border: 1px solid #f5c2c7;
+        border-left: 4px solid #dc3545;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+
+
+    /* RED CIRCLE WITH X */
+
+    .mfa-error-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 26px;
+        height: 26px;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+
+    /* ERROR CONTENT */
+
+    .mfa-error-content {
+        flex: 1;
+    }
+
+
+    /* ERROR TITLE */
+
+    .mfa-error-title {
+        margin-bottom: 3px;
+        color: #842029;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+
+    /* ERROR MESSAGE */
+
+    .mfa-error-message {
+        color: #842029;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+</style>

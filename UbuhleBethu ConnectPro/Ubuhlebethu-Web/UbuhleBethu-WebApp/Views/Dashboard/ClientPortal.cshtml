@@ -1,0 +1,447 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+
+@{
+    ViewData["Title"] = "Client Portal";
+    var quotes = ViewBag.ClientQuotes as IEnumerable<UbuhlebethuConnectPro.Core.Models.QuoteRequest>;
+    var projectPhotos = ViewBag.ProjectPhotos as Dictionary<Guid, List<UbuhlebethuConnectPro.WebApp.ApiClient.SiteReportDto>> ?? new Dictionary<Guid, List<UbuhlebethuConnectPro.WebApp.ApiClient.SiteReportDto>>();
+    int activeJobs = Model.Count();
+    int quoteCount = quotes?.Count() ?? 0;
+    int avgProgress = Model.Any() ? (int)Model.Average(j => j.Progress) : 0;
+    decimal totalBudget = Model.Sum(j => j.EstimatedCost);
+    decimal totalInvoiced = Model.Sum(j => j.InvoicedAmount);
+    decimal totalRemaining = Model.Sum(j => Math.Max(0, j.EstimatedCost - j.InvoicedAmount));
+    var pendingInvoices = quotes?.Where(q => q.Status == "Invoiced" && !q.IsPaid).ToList() ?? new List<UbuhlebethuConnectPro.Core.Models.QuoteRequest>();
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Client Project &amp; Finance Portal</h1>
+        <p class="page-subtitle">Track project progress, live site photos, remaining budget, and invoices</p>
+    </div>
+    <div class="page-actions">
+        <a asp-controller="Quotation" asp-action="Create" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px;">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Request New Quotation
+        </a>
+    </div>
+</div>
+
+@if (pendingInvoices.Any())
+{
+    <!-- Action Required: Pending Invoices Banner -->
+    <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border:1px solid #93c5fd; border-radius:12px; padding:20px; margin-bottom:24px; box-shadow:0 4px 6px -1px rgba(59,130,246,0.1);">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:42px; height:42px; border-radius:50%; background:#2563eb; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin:0 0 4px 0; font-size:1.05rem; font-weight:700; color:#1e40af;">Action Required: Pending Invoice Payment</h3>
+                    <p style="margin:0; font-size:0.88rem; color:#1e3a8a;">
+                        You have <strong>@pendingInvoices.Count</strong> invoice(s) awaiting payment. Projects start and become active for site managers once invoice payment is simulated.
+                    </p>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                @foreach (var inv in pendingInvoices)
+                {
+                    <a asp-controller="Quotation" asp-action="Payment" asp-route-id="@inv.Id" class="btn btn-success" style="font-weight:600; box-shadow:0 2px 4px rgba(16,185,129,0.2);">
+                        Simulate Payment for @inv.Reference (ZAR @inv.EstimatedBudget.ToString("N0")) &rarr;
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Summary Metrics Strip -->
+<div class="metric-strip" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:16px; margin-bottom:24px;">
+    <div class="metric-item card" style="padding:16px; border-radius:10px; background:#fff; border:1px solid var(--color-border);">
+        <div class="metric-item-label" style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600;">Active Projects</div>
+        <div class="metric-item-value" style="font-size:1.6rem; font-weight:700; color:var(--text-primary); margin-top:4px;">@activeJobs</div>
+    </div>
+    <div class="metric-item card" style="padding:16px; border-radius:10px; background:#fff; border:1px solid var(--color-border);">
+        <div class="metric-item-label" style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600;">Overall Progress</div>
+        <div class="metric-item-value" style="font-size:1.6rem; font-weight:700; color:#2563eb; margin-top:4px;">@avgProgress%</div>
+    </div>
+    <div class="metric-item card" style="padding:16px; border-radius:10px; background:#fff; border:1px solid var(--color-border);">
+        <div class="metric-item-label" style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600;">Total Budget</div>
+        <div class="metric-item-value" style="font-size:1.35rem; font-weight:700; color:var(--text-primary); margin-top:4px;">ZAR @totalBudget.ToString("N0")</div>
+    </div>
+    <div class="metric-item card" style="padding:16px; border-radius:10px; background:#fff; border:1px solid var(--color-border);">
+        <div class="metric-item-label" style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600;">Invoiced to Date</div>
+        <div class="metric-item-value" style="font-size:1.35rem; font-weight:700; color:#16a34a; margin-top:4px;">ZAR @totalInvoiced.ToString("N0")</div>
+    </div>
+    <div class="metric-item card" style="padding:16px; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0;">
+        <div class="metric-item-label" style="font-size:0.75rem; text-transform:uppercase; color:#15803d; font-weight:700;">Remaining Budget</div>
+        <div class="metric-item-value" style="font-size:1.35rem; font-weight:800; color:#166534; margin-top:4px;">ZAR @totalRemaining.ToString("N0")</div>
+    </div>
+</div>
+
+<!-- Active Projects with Live Site Photos -->
+<div style="margin-bottom:30px;">
+    <div class="data-table-wrap">
+        <div class="data-table-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <p class="data-table-title" style="margin:0;">Active Projects <span>(@activeJobs)</span></p>
+            <span style="font-size:0.8rem; color:var(--text-muted);">Real-time site reports &amp; photos synced from mobile</span>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div style="padding:48px 20px; text-align:center; color:var(--text-muted); font-size:0.9rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;margin:0 auto 12px;display:block;opacity:0.4;">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                No active construction projects at this time. Once your quotation is invoiced and marked as paid, the project will automatically start and appear here.
+            </div>
+        }
+        else
+        {
+            @foreach (var job in Model)
+            {
+                decimal remainingFunds = Math.Max(0, job.EstimatedCost - job.InvoicedAmount);
+                string progColor = job.Progress >= 70 ? "bg-success" : job.Progress >= 40 ? "bg-warning" : "bg-primary";
+                string statusBadge = job.Progress >= 80 ? "badge-success" : job.Progress >= 40 ? "badge-info" : "badge-neutral";
+                string statusLabel = job.Progress >= 80 ? "Near Completion" : job.Progress >= 40 ? "In Progress" : "Early Stage";
+
+                var photos = projectPhotos.ContainsKey(job.Id) ? projectPhotos[job.Id] : new List<UbuhlebethuConnectPro.WebApp.ApiClient.SiteReportDto>();
+
+                <div style="padding:22px 24px; border-bottom:1px solid var(--color-border); background:#fff;">
+                    <!-- Project Header Strip -->
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:240px;">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
+                                <span style="font-size:1.05rem; font-weight:700; color:var(--text-primary);">@job.Description</span>
+                                <span class="badge @statusBadge">@statusLabel</span>
+                                @if (job.NhbrcCompliant)
+                                {
+                                    <span class="badge badge-success" style="font-size:0.7rem;">NHBRC Certified</span>
+                                }
+                            </div>
+                            <div style="font-size:0.82rem; color:var(--text-muted); line-height:1.5;">
+                                Ref: <strong>@job.JobNumber</strong> &nbsp;&bull;&nbsp; @job.BuildingType &nbsp;&bull;&nbsp; 📍 @job.Location
+                            </div>
+                            <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px;">
+                                Site Manager: <strong style="color:var(--text-primary);">@job.SiteManager</strong>
+                            </div>
+                        </div>
+
+                        <!-- Budget & Financial Metrics Breakdown -->
+                        <div style="display:flex; gap:24px; flex-shrink:0; flex-wrap:wrap; align-items:center; background:#f8fafc; padding:12px 18px; border-radius:10px; border:1px solid #e2e8f0;">
+                            <div>
+                                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Total Budget</div>
+                                <div style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">ZAR @job.EstimatedCost.ToString("N0")</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Invoiced</div>
+                                <div style="font-size:0.95rem; font-weight:700; color:#16a34a;">ZAR @job.InvoicedAmount.ToString("N0")</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#15803d;">Remaining Money</div>
+                                <div style="font-size:0.95rem; font-weight:800; color:#15803d;">ZAR @remainingFunds.ToString("N0")</div>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <a asp-controller="Dashboard" asp-action="PrintInvoice" asp-route-jobId="@job.Id" target="_blank" class="btn btn-outline-primary btn-sm" style="margin-top:2px; display:inline-flex; align-items:center; gap:5px;" title="View or print official tax invoice">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    View / Print Tax Invoice
+                                </a>
+                                <a asp-controller="Dashboard" asp-action="Details" asp-route-id="@job.Id" class="btn btn-secondary btn-sm" style="margin-top:2px;">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="margin-top:16px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                            <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Site Completion Progress</span>
+                            <span id="client-prog-text-@job.Id" class="client-progress-text" style="font-size:0.8rem; font-weight:700; color:var(--text-primary);">@job.Progress%</span>
+                        </div>
+                        <div style="height:10px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+                            <div id="client-prog-bar-@job.Id" class="client-progress-fill" style="width:@(job.Progress)%; height:100%; background:linear-gradient(90deg, #3b82f6 0%, #10b981 100%); transition:width 0.75s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Progressive Milestone Billing Schedule & Invoicing -->
+                    @{
+                        decimal m1Cost = Math.Round(job.EstimatedCost * 0.25m, 2);
+                        decimal m2Cost = Math.Round(job.EstimatedCost * 0.50m, 2);
+                        decimal m3Cost = Math.Max(0, job.EstimatedCost - m1Cost - m2Cost);
+
+                        bool m1IsPaid = job.InvoicedAmount >= m1Cost;
+                        bool m2IsPaid = job.InvoicedAmount >= (m1Cost + m2Cost);
+                        bool m3IsPaid = job.InvoicedAmount >= job.EstimatedCost && job.EstimatedCost > 0;
+
+                        bool m2IsEligible = !m2IsPaid && m1IsPaid && job.Progress >= 40;
+                        bool m3IsEligible = !m3IsPaid && m2IsPaid && job.Progress >= 90;
+
+                        int nextM = 0;
+                        string nextMTitle = "";
+                        decimal nextMAmount = 0m;
+
+                        if (!m1IsPaid)
+                        {
+                            nextM = 1;
+                            nextMTitle = "Milestone 1: Deposit (25%)";
+                            nextMAmount = m1Cost;
+                        }
+                        else if (m2IsEligible)
+                        {
+                            nextM = 2;
+                            nextMTitle = "Milestone 2: Progress (50%)";
+                            nextMAmount = m2Cost;
+                        }
+                        else if (m3IsEligible)
+                        {
+                            nextM = 3;
+                            nextMTitle = "Milestone 3: Practical Completion (25%)";
+                            nextMAmount = m3Cost;
+                        }
+                    }
+
+                    <div style="margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                            <div>
+                                <span style="font-size:0.85rem; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#2563eb;">
+                                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                                    </svg>
+                                    Progressive Milestone Billing (3-Stage Invoicing Schedule)
+                                </span>
+                                <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;">
+                                    Deposit (25%) activates project &bull; Progress draw (50%) unlocks at 40%+ progress &bull; Handover (25%) unlocks at 90%+ progress
+                                </span>
+                            </div>
+
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                @if (nextM > 0)
+                                {
+                                    <form asp-controller="Dashboard" asp-action="SimulateMilestonePayment" method="post" style="margin:0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="jobId" value="@job.Id" />
+                                        <input type="hidden" name="milestone" value="@nextM" />
+                                        <button type="submit" class="btn btn-success btn-sm" style="font-weight:700; box-shadow:0 2px 4px rgba(16,185,129,0.3); display:inline-flex; align-items:center; gap:6px;">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            Simulate @nextMTitle Payment (ZAR @nextMAmount.ToString("N0")) &rarr;
+                                        </button>
+                                    </form>
+                                }
+                                else if (m3IsPaid)
+                                {
+                                    <span class="badge badge-success" style="font-size:0.78rem; padding:6px 12px;">
+                                        &#10003; All 3 Milestone Invoices Settled (100% Paid)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral" style="font-size:0.75rem; padding:6px 10px;">
+                                        @(m1IsPaid && !m2IsPaid ? $"Milestone 2 locked (site at {job.Progress}%, requires 40%)" : $"Milestone 3 locked (site at {job.Progress}%, requires 90%)")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- 3-Stage Milestone Visual Grid -->
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:12px;">
+                            <!-- Milestone 1 -->
+                            <div style="background:#fff; border:1px solid @(m1IsPaid ? "#86efac" : "#cbd5e1"); border-radius:8px; padding:12px 14px; position:relative;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Stage 1: Deposit (25%)</span>
+                                    <span class="badge @(m1IsPaid ? "badge-success" : "badge-primary")" style="font-size:0.68rem;">
+                                        @(m1IsPaid ? "Paid" : "Outstanding")
+                                    </span>
+                                </div>
+                                <div style="font-size:1.05rem; font-weight:800; color:var(--text-primary);">
+                                    ZAR @m1Cost.ToString("N0")
+                                </div>
+                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;">
+                                    Required to activate project
+                                </div>
+                            </div>
+
+                            <!-- Milestone 2 -->
+                            <div style="background:#fff; border:1px solid @(m2IsPaid ? "#86efac" : (m2IsEligible ? "#93c5fd" : "#e2e8f0")); border-radius:8px; padding:12px 14px; opacity:@(m1IsPaid ? "1" : "0.65");">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Stage 2: Progress (50%)</span>
+                                    <span id="stage2-status-@job.Id" class="badge @(m2IsPaid ? "badge-success" : (m2IsEligible ? "badge-info" : "badge-neutral"))" style="font-size:0.68rem;">
+                                        @(m2IsPaid ? "Paid" : (m2IsEligible ? "Ready to Pay" : (job.Progress < 40 ? $"Locked ({job.Progress}%/40%)" : "Locked")))
+                                    </span>
+                                </div>
+                                <div style="font-size:1.05rem; font-weight:800; color:var(--text-primary);">
+                                    ZAR @m2Cost.ToString("N0")
+                                </div>
+                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;">
+                                    Available when site reaches 40%+ (current: @job.Progress%)
+                                </div>
+                            </div>
+
+                            <!-- Milestone 3 -->
+                            <div style="background:#fff; border:1px solid @(m3IsPaid ? "#86efac" : (m3IsEligible ? "#93c5fd" : "#e2e8f0")); border-radius:8px; padding:12px 14px; opacity:@(m2IsPaid ? "1" : "0.65");">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Stage 3: Handover (25%)</span>
+                                    <span id="stage3-status-@job.Id" class="badge @(m3IsPaid ? "badge-success" : (m3IsEligible ? "badge-info" : "badge-neutral"))" style="font-size:0.68rem;">
+                                        @(m3IsPaid ? "Paid" : (m3IsEligible ? "Ready to Pay" : (job.Progress < 90 ? $"Locked ({job.Progress}%/90%)" : "Locked")))
+                                    </span>
+                                </div>
+                                <div style="font-size:1.05rem; font-weight:800; color:var(--text-primary);">
+                                    ZAR @m3Cost.ToString("N0")
+                                </div>
+                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;">
+                                    Available when site reaches 90%+ (current: @job.Progress%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Site Photos Section -->
+                    <div style="margin-top:20px; padding-top:16px; border-top:1px dashed #e2e8f0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <span style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
+                                Recent Site Photos &amp; Field Reports (@photos.Count)
+                            </span>
+                            <a asp-controller="SiteReports" asp-action="Project" asp-route-id="@job.Id" style="font-size:0.78rem; color:#2563eb; text-decoration:none; font-weight:600;">
+                                View All Photos &amp; Reports &rarr;
+                            </a>
+                        </div>
+
+                        @if (!photos.Any())
+                        {
+                            <div style="padding:14px; background:#f8fafc; border-radius:8px; font-size:0.8rem; color:var(--text-muted); text-align:center;">
+                                No site photos uploaded yet. When site managers or field workers capture inspection photos on the mobile app, they will appear here in real time.
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px;">
+                                @foreach (var photo in photos.Take(6))
+                                {
+                                    var portalPhotoUrl = Url.Action("Photo", "SiteReports", new { id = photo.Id });
+                                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; display:flex; flex-direction:column;">
+                                        <a href="@portalPhotoUrl" target="_blank" title="Click to view full photo" style="display:block; height:120px; overflow:hidden; background:#1e293b;">
+                                            <img src="@portalPhotoUrl" alt="Site photo for @photo.ConstructionStage"
+                                                 style="width:100%; height:100%; object-fit:cover; transition:transform 0.2s ease;"
+                                                 onmouseover="this.style.transform='scale(1.05)'"
+                                                 onmouseout="this.style.transform='scale(1)'"
+                                                 onerror="this.onerror=null; this.src='https://placehold.co/400x300?text=Site+Photo';" />
+                                        </a>
+                                        <div style="padding:8px 10px; font-size:0.74rem;">
+                                            <div style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@photo.ConstructionStage</div>
+                                            <div style="color:var(--text-muted); font-size:0.7rem; margin-top:2px;">@photo.LoggedAt.ToLocalTime().ToString("dd MMM, HH:mm")</div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Quotation Requests History -->
+<div class="data-table-wrap">
+    <div class="data-table-header">
+        <p class="data-table-title">Quotation Requests <span>(@quoteCount)</span></p>
+        <div class="table-controls">
+            <form method="get" asp-action="ClientPortal" style="display:flex; align-items:center; gap:8px;">
+                <input type="date" name="from" class="form-control form-control-sm"
+                       style="width:130px; font-size:0.78rem; padding:5px 8px;" />
+                <input type="date" name="to" class="form-control form-control-sm"
+                       style="width:130px; font-size:0.78rem; padding:5px 8px;" />
+                <select name="status" class="form-select" style="width:160px; font-size:0.85rem; padding:5px 8px;">
+                    <option value="">All Statuses</option>
+                    <option>Draft</option>
+                    <option>Submitted</option>
+                    <option>Under Review</option>
+                    <option>Reviewed</option>
+                    <option value="ManagerApproved">Manager Approved</option>
+                    <option>Approved</option>
+                    <option>Invoiced</option>
+                    <option>Paid</option>
+                    <option>Rejected</option>
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+            </form>
+        </div>
+    </div>
+
+    @if (quotes != null && quotes.Any())
+    {
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Date Submitted</th>
+                        <th>Project Type</th>
+                        <th>Status</th>
+                        <th>Estimate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var q in quotes)
+                    {
+                        string statusBadge = q.Status switch
+                        {
+                            "Approved" => "badge-success",
+                            "Paid"     => "badge-success",
+                            "Invoiced" => "badge-primary",
+                            "Reviewed" => "badge-info",
+                            "Submitted" => "badge-submitted",
+                            _          => "badge-neutral"
+                        };
+                        <tr>
+                            <td class="td-primary">@q.Reference</td>
+                            <td>@q.RequestDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>@q.ProjectType</td>
+                            <td><span class="badge @statusBadge">@q.Status</span></td>
+                            <td>ZAR @q.EstimatedBudget.ToString("N0")</td>
+                            <td>
+                                @if (q.Status == "Invoiced" && !q.IsPaid)
+                                {
+                                    <a asp-controller="Quotation" asp-action="Payment" asp-route-id="@q.Id"
+                                       class="btn btn-success btn-sm" style="margin-right:6px;">
+                                        Pay Invoice
+                                    </a>
+                                }
+                                <a asp-controller="Quotation" asp-action="PrintInvoice" asp-route-id="@q.Id" target="_blank"
+                                   class="btn btn-outline-secondary btn-sm" title="View or print official tax invoice" style="margin-right:6px;">Invoice</a>
+                                <a asp-controller="Quotation" asp-action="Details" asp-route-id="@q.Id"
+                                   class="btn btn-secondary btn-sm">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div style="padding:32px 20px; text-align:center; color:var(--text-muted); font-size:0.82rem;">
+            No quotation requests found. Submit your first request using the button above.
+        </div>
+    }
+</div>

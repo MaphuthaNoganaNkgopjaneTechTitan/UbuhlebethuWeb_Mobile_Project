@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/loginMain"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="@color/colorBackground">
+
+    <ImageView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ubuhlebethu_logo"
+        android:scaleType="fitCenter"
+        android:contentDescription="Ubuhlebethu Logo" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ubuhlebethu ConnectPro"
+        android:textColor="@color/colorPrimary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mobile Staff Portal"
+        android:textColor="@color/colorTextTertiary"
+        android:textSize="14sp"
+        android:layout_marginBottom="32dp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Username"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:boxBackgroundColor="@color/colorInputBackground"
+        app:boxStrokeColor="@color/colorInputBorder"
+        app:boxStrokeErrorColor="@color/colorInputBorderError"
+        android:textColorHint="@color/colorInputHint">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:imeOptions="actionNext"
+            android:textColor="@color/colorInputText" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="Password"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:passwordToggleEnabled="true"
+        app:boxBackgroundColor="@color/colorInputBackground"
+        app:boxStrokeColor="@color/colorInputBorder"
+        app:boxStrokeErrorColor="@color/colorInputBorderError"
+        android:textColorHint="@color/colorInputHint">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:imeOptions="actionDone"
+            android:textColor="@color/colorInputText" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Loading indicator shown during login -->
+    <ProgressBar
+        android:id="@+id/progressLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:visibility="gone" />
+
+    <!-- Standard Login Button -->
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:text="LOG IN TO MOBILE PORTAL"
+        android:backgroundTint="@color/colorButtonPrimaryBackground"
+        android:textColor="@color/colorButtonPrimaryText"
+        android:layout_marginTop="24dp"
+        app:cornerRadius="8dp" />
+
+    <!-- Biometric / Face ID / Fingerprint Login Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnBiometricLogin"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="12dp"
+        android:text="LOGIN WITH FACE ID / FINGERPRINT"
+        android:textColor="@color/colorButtonSecondaryText"
+        app:strokeColor="@color/colorButtonOutlineStroke"
+        app:strokeWidth="2dp"
+        app:cornerRadius="8dp" />
+
+    <!-- Error message display -->
+    <TextView
+        android:id="@+id/tvLoginError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="@color/colorError"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+</LinearLayout>

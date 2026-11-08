@@ -1,0 +1,15 @@
+@using UbuhlebethuConnectPro.WebApp.ApiClient
+@model IEnumerable<QuoteDto>
+@{
+    ViewData["Title"] = "All proposals";
+    var current = ViewData["Status"] as string ?? "";
+    var statuses = new[] { "", "Submitted", "Reviewed", "Approved", "Invoiced", "Paid", "Rejected" };
+}
+<div class="page-header"><h1 class="page-title">All proposals</h1><p class="page-subtitle">Read-only. Open a proposal to read the client's details and download their document.</p></div>
+<form method="get" class="filter-bar" style="margin-bottom:1rem">
+    <label for="status" class="form-label" style="margin-right:.5rem">Status</label>
+    <select id="status" name="status" class="form-select" style="max-width:220px;display:inline-block" onchange="this.form.submit()">
+        @foreach (var s in statuses) { <option value="@s" selected="@(s == current)">@(s == "" ? "All" : s)</option> }
+    </select>
+</form>
+@await Html.PartialAsync("_QuoteTable", Model)

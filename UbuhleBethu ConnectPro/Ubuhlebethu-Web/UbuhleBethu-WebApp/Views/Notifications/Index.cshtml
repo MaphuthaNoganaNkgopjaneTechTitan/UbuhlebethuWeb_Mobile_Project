@@ -1,0 +1,12 @@
+@model IEnumerable<UbuhlebethuConnectPro.WebApp.ApiClient.NotificationDto>
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<h2>Notifications</h2>
+
+<div class="card">
+    <div class="card-body">
+        @await Html.PartialAsync("_NotificationsList", Model)
+    </div>
+</div>

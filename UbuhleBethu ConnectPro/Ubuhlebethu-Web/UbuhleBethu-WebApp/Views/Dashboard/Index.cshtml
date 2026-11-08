@@ -1,0 +1,464 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+
+@{
+    ViewData["Title"] = "Office & QS Dashboard";
+    int total = Model?.Count() ?? 0;
+    bool canDeleteProjects = User.IsInRole("Manager") || User.IsInRole("Management");
+}
+
+<style>
+    #jobsTable.compact td, #jobsTable.compact th { padding-top: 4px !important; padding-bottom: 4px !important; font-size: 0.8rem; }
+    .modal-backdrop-custom {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.65);
+        z-index: 10500;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+        .modal-backdrop-custom.show {
+            display: flex !important;
+        }
+
+    .custom-modal-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 760px;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Jobs In Progress</h1>
+        <p class="page-subtitle">Active construction projects — Office &amp; Quantity Surveyor view</p>
+    </div>
+    <div class="page-actions">
+        <!-- Working AI Draft Estimate Action Button -->
+        <button type="button" class="btn btn-action-blue" onclick="openAiDraftModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px;">
+                <path d="M12 2v20"></path>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            AI Draft Estimate
+        </button>
+        <a class="btn btn-secondary" href="/Dashboard/DownloadCsv?module=Projects" download style="display:inline-flex; align-items:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Data Table Wrap -->
+<div class="data-table-wrap">
+    <div class="data-table-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <p class="data-table-title">
+                JOBS IN PROGRESS
+                <span>(@total)</span>
+            </p>
+        </div>
+        <div class="table-controls">
+            @if (canDeleteProjects)
+            {
+                <button type="button" id="btnDeleteSelected" class="btn btn-danger btn-sm" style="display:none;" onclick="openBatchDeleteModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Delete Selected (<span id="selectedProjectsCount">0</span>)</span>
+                </button>
+            }
+            <div class="table-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" placeholder="Search jobs..." id="jobSearch" oninput="filterTable()" />
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-secondary btn-sm" onclick="toggleDropdownMenu(event, 'settingsDrop')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" />
+                    </svg>
+                    Settings
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;">
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+                <div class="dropdown-menu" id="settingsDrop" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.12); z-index:9999;">
+                    <div class="dropdown-header">Display Options</div>
+                    <a class="dropdown-item" href="javascript:void(0)" onclick="clearJobSearch()">Clear Search</a>
+                    <a class="dropdown-item" href="javascript:void(0)" onclick="toggleCompact()">Compact View</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="btn btn-secondary" href="/Dashboard/DownloadCsv?module=Projects" download style="display:inline-flex; align-items:center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                        Download
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="jobsTable">
+            <thead>
+                <tr>
+                    @if (canDeleteProjects)
+                    {
+                        <th style="width: 38px; text-align: center;">
+                            <input type="checkbox" id="selectAllProjects" class="form-check-input" title="Select all projects" onchange="toggleSelectAllProjects(this)" />
+                        </th>
+                    }
+                    <th class="sortable">Description</th>
+                    <th class="sortable">Type</th>
+                    <th class="sortable">Progress</th>
+                    <th class="sortable">Variance</th>
+                    <th class="sortable">Invoiced</th>
+                    <th class="sortable">Est. Budget</th>
+                    <th class="sortable">Client</th>
+                    <th style="text-align: right; width: 140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        string progColor = item.Progress >= 70 ? "success" : item.Progress >= 40 ? "warning" : "primary";
+                        string varColor = item.Variance <= 10 ? "success" : item.Variance <= 20 ? "warning" : "danger";
+                        decimal invoicedPct = item.EstimatedCost > 0 ? Math.Min(item.InvoicedAmount / item.EstimatedCost * 100, 100) : 0;
+                        string invColor = invoicedPct >= 70 ? "success" : invoicedPct >= 40 ? "warning" : "muted";
+
+                        <tr>
+                            @if (canDeleteProjects)
+                            {
+                                <td style="text-align: center;">
+                                    <input type="checkbox" class="form-check-input project-cb" value="@item.Id" data-title="@item.Description" data-jobnum="@item.JobNumber" onchange="onProjectCheckboxChange()" />
+                                </td>
+                            }
+                            <td>
+                                <div class="td-primary">@item.Description</div>
+                                <div class="small text-muted">@item.JobNumber</div>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral">@item.BuildingType</span>
+                            </td>
+                            <td style="min-width:130px;">
+                                <div class="progress-bar-wrap">
+                                    <div class="progress-track">
+                                        <div class="progress-fill @progColor" style="width:@(item.Progress)%;"></div>
+                                    </div>
+                                    <span class="progress-pct">@item.Progress%</span>
+                                </div>
+                            </td>
+                            <td style="min-width:130px;">
+                                <div class="progress-bar-wrap">
+                                    <div class="progress-track">
+                                        <div class="progress-fill @varColor" style="width:@(Math.Min(item.Variance, 100))%;"></div>
+                                    </div>
+                                    <span class="progress-pct @(item.Variance > 20 ? "text-danger" : "")">@item.Variance%</span>
+                                </div>
+                            </td>
+                            <td style="min-width:130px;">
+                                <div class="progress-bar-wrap">
+                                    <div class="progress-track">
+                                        <div class="progress-fill @invColor" style="width:@((int)invoicedPct)%;"></div>
+                                    </div>
+                                    <span class="progress-pct">@((int)invoicedPct)%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-600">R</span> @item.EstimatedCost.ToString("N0")
+                            </td>
+                            <td>@item.ClientName</td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <a asp-controller="Dashboard" asp-action="Details" asp-route-id="@item.Id"
+                                       class="btn btn-secondary btn-sm">
+                                        View
+                                    </a>
+                                    @if (canDeleteProjects)
+                                    {
+                                        <button type="button" class="btn btn-outline-danger btn-sm" title="Delete project" onclick="deleteSingleProject('@item.Id', '@item.Description (@item.JobNumber)')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="@(canDeleteProjects ? 9 : 8)" class="text-center py-4 text-muted">
+                            No active jobs found.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Select Job or Quote for AI Estimation -->
+<div class="modal-backdrop-custom" id="aiDraftModal" onclick="closeAiModalOnOutside(event)">
+    <div class="custom-modal-card">
+        <div class="d-flex justify-content-between align-items-center p-3 text-white" style="background:#0284c7;">
+            <div style="font-weight:700; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+                    <path d="M12 2v20"></path>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                AI Quantity Survey Estimation
+            </div>
+            <button type="button" class="btn text-white p-0 fs-5" onclick="closeAiModal()">&times;</button>
+        </div>
+        <div class="p-3">
+            <p class="text-muted small mb-3">Choose how you would like to run automated project cost estimation:</p>
+            <div class="d-flex flex-column gap-2">
+                <a asp-action="PendingQuotes" class="btn btn-outline-primary text-start p-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">Draft Estimate on Pending Quotation &rsaquo;</div>
+                        <div class="text-muted small">Select an incoming client request to generate BOQ & pricing</div>
+                    </div>
+                </a>
+                <div class="border rounded p-3 bg-light">
+                    <div class="fw-bold small mb-2 text-dark">Estimate Active Job in Progress:</div>
+                    <select id="selectActiveJob" class="form-select mb-2" style="font-size:1rem; padding:10px 12px; border:2px solid #0284c7;">
+                        @if (Model != null)
+                        {
+                            @foreach (var j in Model)
+                            {
+                                <option value="@j.Id">@j.JobNumber — @j.Description (@j.ClientName)</option>
+                            }
+                        }
+                    </select>
+                    <button type="button" id="runEstimateBtn" class="btn btn-sm btn-primary w-100" style="background:#0284c7; border-color:#0284c7;" onclick="runEstimateOnSelectedJob()">
+                        Run AI Estimation
+                    </button>
+                    <div id="aiEstimateResult" role="status" aria-live="polite" style="display:none; margin-top:12px; font-size:1rem; line-height:1.55; white-space:pre-wrap;"></div>
+                    <a id="aiEstimateOpen" href="#" class="btn btn-sm btn-outline-secondary w-100" style="display:none; margin-top:10px;">Open this job</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (canDeleteProjects)
+{
+    <!-- Delete Projects Confirmation Modal -->
+    <div class="modal fade" id="deleteProjectsModal" tabindex="-1" aria-labelledby="deleteProjectsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="DeleteProjects" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteProjectsModalLabel" style="color: var(--color-danger); font-weight: 600;">
+                            Confirm Project Deletion
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger d-flex align-items-start gap-2 p-3 mb-3" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;flex-shrink:0;color:var(--color-danger);margin-top:2px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <div style="font-size:0.88rem; color: #7f1d1d;">
+                                <strong>Warning:</strong> You are about to permanently delete <span id="modalDeleteCountText" class="fw-bold">0 projects</span>.
+                                All associated metrics across the application (order book values, progress %, invoiced sums, and outstanding balances) will automatically recalculate and adjust.
+                            </div>
+                        </div>
+
+                        <label class="form-label fw-bold small text-muted">Projects to be deleted:</label>
+                        <div id="modalSelectedProjectsList" style="max-height:160px; overflow-y:auto; font-size:0.85rem;" class="border rounded p-2 mb-3 bg-light">
+                        </div>
+
+                        <div id="hiddenProjectIdsContainer"></div>
+
+                        <div class="mb-2">
+                            <label for="deleteProjectReason" class="form-label fw-bold" style="font-size:0.85rem;">Reason for Deletion (Optional)</label>
+                            <textarea id="deleteProjectReason" name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g., Cancelled contract, project closed, data cleanup..."></textarea>
+                            <div class="form-text">This will be permanently recorded in the system audit logs.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function filterTable() {
+            var query = document.getElementById('jobSearch').value.toLowerCase();
+            var rows = document.querySelectorAll('#jobsTable tbody tr');
+            rows.forEach(function(row) {
+                var text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        function toggleSelectAllProjects(master) {
+            var cbs = document.querySelectorAll('.project-cb');
+            cbs.forEach(function(cb) {
+                var row = cb.closest('tr');
+                if (!row || row.style.display !== 'none') {
+                    cb.checked = master.checked;
+                }
+            });
+            onProjectCheckboxChange();
+        }
+
+        function onProjectCheckboxChange() {
+            var cbs = document.querySelectorAll('.project-cb:checked');
+            var totalCbs = document.querySelectorAll('.project-cb');
+            var count = cbs.length;
+
+            var btn = document.getElementById('btnDeleteSelected');
+            var countSpan = document.getElementById('selectedProjectsCount');
+            if (btn && countSpan) {
+                countSpan.textContent = count;
+                btn.style.display = count > 0 ? 'inline-flex' : 'none';
+            }
+
+            var master = document.getElementById('selectAllProjects');
+            if (master) {
+                master.checked = count > 0 && count === totalCbs.length;
+                master.indeterminate = count > 0 && count < totalCbs.length;
+            }
+        }
+
+        function openBatchDeleteModal() {
+            var cbs = document.querySelectorAll('.project-cb:checked');
+            if (cbs.length === 0) return;
+
+            var listDiv = document.getElementById('modalSelectedProjectsList');
+            var hiddenContainer = document.getElementById('hiddenProjectIdsContainer');
+            var countText = document.getElementById('modalDeleteCountText');
+
+            listDiv.innerHTML = '';
+            hiddenContainer.innerHTML = '';
+            countText.textContent = cbs.length + ' project' + (cbs.length === 1 ? '' : 's');
+
+            cbs.forEach(function(cb) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'projectIds';
+                input.value = cb.value;
+                hiddenContainer.appendChild(input);
+
+                var title = cb.getAttribute('data-title') || 'Project';
+                var jobnum = cb.getAttribute('data-jobnum') || '';
+                var item = document.createElement('div');
+                item.className = 'py-1 border-bottom d-flex justify-content-between align-items-center';
+                item.innerHTML = '<span>' + (jobnum ? '<strong>' + jobnum + '</strong>: ' : '') + title + '</span>';
+                listDiv.appendChild(item);
+            });
+
+            var modalEl = document.getElementById('deleteProjectsModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+
+        function deleteSingleProject(id, title) {
+            var listDiv = document.getElementById('modalSelectedProjectsList');
+            var hiddenContainer = document.getElementById('hiddenProjectIdsContainer');
+            var countText = document.getElementById('modalDeleteCountText');
+
+            listDiv.innerHTML = '';
+            hiddenContainer.innerHTML = '';
+            countText.textContent = '1 project';
+
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'projectIds';
+            input.value = id;
+            hiddenContainer.appendChild(input);
+
+            var item = document.createElement('div');
+            item.className = 'py-1 fw-bold';
+            item.textContent = title;
+            listDiv.appendChild(item);
+
+            var modalEl = document.getElementById('deleteProjectsModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+
+        function openAiDraftModal() {
+            document.getElementById('aiDraftModal').classList.add('show');
+        }
+
+        function closeAiModal() {
+            document.getElementById('aiDraftModal').classList.remove('show');
+        }
+
+        function closeAiModalOnOutside(e) {
+            if (e.target.id === 'aiDraftModal') {
+                closeAiModal();
+            }
+        }
+
+        function runEstimateOnSelectedJob() {
+            const jobId = document.getElementById('selectActiveJob').value;
+            if (!jobId) { showToast('There are no jobs to estimate yet.', 'error'); return; }
+            const btn = document.getElementById('runEstimateBtn');
+            const out = document.getElementById('aiEstimateResult');
+            const open = document.getElementById('aiEstimateOpen');
+            btn.disabled = true; btn.textContent = 'Estimating...';
+            out.style.display = 'block'; out.textContent = 'Working out the estimate...';
+            fetch('/Dashboard/JobEstimate?id=' + encodeURIComponent(jobId), { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(r => r.json().then(j => { if (!r.ok || !j.ok) throw new Error(j.error || 'The estimate could not be produced.'); return j; }))
+                .then(j => { out.textContent = j.text; open.href = '/Dashboard/Details/' + jobId; open.style.display = 'block'; })
+                .catch(e => { out.textContent = e.message; open.style.display = 'none'; })
+                .finally(() => { btn.disabled = false; btn.textContent = 'Run AI Estimation'; });
+        }
+
+        function clearJobSearch() {
+            document.getElementById('jobSearch').value = '';
+            filterTable();
+        }
+
+        function toggleCompact() {
+            const on = document.getElementById('jobsTable').classList.toggle('compact');
+            showToast(on ? 'Compact view on.' : 'Compact view off.', 'info');
+        }
+    </script>
+}

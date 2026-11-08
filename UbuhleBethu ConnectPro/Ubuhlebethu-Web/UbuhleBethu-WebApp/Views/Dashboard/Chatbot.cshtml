@@ -1,0 +1,169 @@
+@{
+    ViewData["Title"] = "ConnectPro AI Assistant";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="page-title" style="font-size: 1.5rem; font-weight: 700;">ConnectPro AI Assistant</h1>
+        <p class="page-subtitle text-muted mb-0">Ask questions, get step-by-step guidance, cost estimates, or inspect live project status.</p>
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="newFullChat()" title="Start a fresh conversation">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        New Chat
+    </button>
+</div>
+
+<div class="card shadow-sm border" style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; height: 72vh; min-height: 500px; border-radius: 12px; overflow: hidden;">
+    <!-- Header status bar -->
+    <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--color-primary, #C5221F); display: flex; align-items: center; justify-content: center; color: white;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+            </div>
+            <div>
+                <div style="font-weight: 600; font-size: 0.95rem; color: #1e293b;">ConnectPro Intelligence Engine</div>
+                <div style="font-size: 0.75rem; color: #16a34a; display: flex; align-items: center; gap: 4px;">
+                    <span style="width: 7px; height: 7px; background: #16a34a; border-radius: 50%; display: inline-block;"></span>
+                    Active &bull; Multi-Model LLM + Domain Verification
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <label for="full-provider" class="small text-muted mb-0 d-none d-sm-inline" style="font-size: 0.78rem;">Model:</label>
+            <select id="full-provider" class="form-select form-select-sm" style="max-width: 170px; font-size: 0.8rem; border-color: #cbd5e1;">
+                <option value="auto">Auto (Smart Failover)</option>
+                <option value="groq">Groq (LLM 120B / Fast)</option>
+                <option value="gemini">Google Gemini 3.8</option>
+                <option value="nvidia">NVIDIA NIM</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Quick action chips -->
+    <div class="bg-light px-3 py-2 border-bottom d-flex gap-2 flex-wrap" style="font-size: 0.8rem;">
+        <span class="text-muted small align-self-center">Suggested:</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem; border-radius: 12px;" onclick="sendQuickPrompt('How do I submit and track a quote request?')">
+            📋 Request Quote Steps
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem; border-radius: 12px;" onclick="sendQuickPrompt('Give me a cost estimate for a 180 m² residential home in Gauteng.')">
+            💰 180 m² House Estimate
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem; border-radius: 12px;" onclick="sendQuickPrompt('What actions am I authorized to perform based on my current role?')">
+            🔐 Check My Role Capabilities
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem; border-radius: 12px;" onclick="sendQuickPrompt('What are my active projects and their budget status?')">
+            📊 Active Projects & Budget
+        </button>
+    </div>
+
+    <!-- Transcript / Chat messages -->
+    <div id="full-transcript" class="card-body p-3 overflow-auto" style="flex: 1; background: #f8fafc; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Welcome banner -->
+        <div class="text-start small" style="align-self: flex-start; max-width: 88%;">
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 12px 12px 12px 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); color: #334155;">
+                <p class="mb-1 fw-bold" style="color: var(--color-primary, #C5221F);">Sawubona! Welcome to ConnectPro AI.</p>
+                <p class="mb-0">I can guide you through exact procedures for any task in the system, check your role capabilities, calculate detailed South African QS cost estimates, query live project databases, and maintain continuous profile memory. How may I assist you?</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Footer -->
+    <div class="card-footer bg-white p-3 border-top">
+        <form id="full-chat-form" onsubmit="event.preventDefault(); sendFullChat();" class="d-flex gap-2 align-items-center m-0">
+            <input id="full-chat-input" type="text" class="form-control" placeholder="Ask anything about quotes, steps, costs, projects, or attendance..." style="font-size: 0.9rem;" autocomplete="off" />
+            <button id="full-chat-send-btn" type="submit" class="btn btn-primary px-3" style="background-color: var(--color-primary, #C5221F); border-color: var(--color-primary, #C5221F); display: flex; align-items: center; gap: 6px;">
+                <span>Send</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/connectpro-chat.js" asp-append-version="true"></script>
+<script>
+    var __fullChat = ConnectProChat.Conversation('fullpage');
+    var __bubbleBotStyle = 'background-color:#ffffff; color:#334155; padding:12px 16px; border-radius:12px 12px 12px 2px; display:inline-block; max-width:90%; border:1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); text-align:left; word-break:break-word;';
+    var __bubbleUserStyle = 'background-color:var(--color-primary, #C5221F); color:#ffffff; padding:10px 16px; border-radius:12px 12px 2px 12px; display:inline-block; max-width:85%; text-align:left; white-space:pre-wrap; word-break:break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.08);';
+
+    function __addFullBubble(role, html, extra) {
+        var log = document.getElementById('full-transcript');
+        var row = document.createElement('div');
+        row.className = (role === 'user' ? 'text-end align-self-end' : 'text-start align-self-start') + ' small';
+        row.style.maxWidth = '92%';
+        var span = document.createElement('span');
+        span.setAttribute('style', role === 'user' ? __bubbleUserStyle : __bubbleBotStyle);
+        span.innerHTML = html;
+        row.appendChild(span);
+        if (extra) row.appendChild(extra);
+        log.appendChild(row);
+        log.scrollTop = log.scrollHeight;
+        return row;
+    }
+
+    // Restore conversation history from sessionStorage
+    (function restoreFullChat() {
+        __fullChat.messages().forEach(function (m) {
+            __addFullBubble(m.role, m.role === 'user' ? ConnectProChat.escape(m.content) : ConnectProChat.renderMarkdown(m.content));
+        });
+    })();
+
+    function newFullChat() {
+        __fullChat.clear();
+        var log = document.getElementById('full-transcript');
+        while (log.children.length > 1) log.removeChild(log.lastChild);
+    }
+
+    function sendQuickPrompt(promptText) {
+        var input = document.getElementById('full-chat-input');
+        input.value = promptText;
+        sendFullChat();
+    }
+
+    var __fullBusy = false;
+    async function sendFullChat() {
+        var input = document.getElementById('full-chat-input');
+        var provider = document.getElementById('full-provider').value;
+        var btn = document.getElementById('full-chat-send-btn');
+        var question = input.value.trim();
+        if (!question || __fullBusy) return;
+
+        __fullBusy = true;
+        btn.disabled = true;
+        input.value = '';
+        __addFullBubble('user', ConnectProChat.escape(question));
+
+        var typing = __addFullBubble('assistant', '<div class="d-flex align-items-center gap-2 text-muted"><span class="spinner-border spinner-border-sm" role="status"></span><span>Consulting ConnectPro AI&hellip;</span></div>');
+
+        try {
+            var r = await __fullChat.send(question, provider);
+            typing.remove();
+
+            var note = null;
+            if (r.fallback) {
+                note = document.createElement('div');
+                note.className = 'text-muted';
+                note.style.cssText = 'font-size:0.72em; margin-top:3px;';
+                note.textContent = 'Cloud AI providers busy — answered via built-in system domain engine.';
+            }
+            __addFullBubble('assistant', ConnectProChat.renderMarkdown(r.answer), note);
+        } catch (e) {
+            typing.remove();
+            __addFullBubble('assistant', '<div class="text-danger fw-bold">⚠️ Connection error: unable to reach the assistant right now. Please check your network and try again.</div>');
+        } finally {
+            __fullBusy = false;
+            btn.disabled = false;
+            input.focus();
+        }
+    }
+</script>
+}

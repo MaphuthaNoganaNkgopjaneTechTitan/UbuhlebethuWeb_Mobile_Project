@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ubuhlebethu ConnectPro — Corporate Construction Management Platform" />
+    <title>@ViewData["Title"] - ConnectPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/images/logo.png" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2b0606 0%, #4a0d0d 45%, #1a0303 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1f2937;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 460px;
+            padding: 20px;
+        }
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            text-decoration: none;
+        }
+        .auth-brand img {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+        }
+        .auth-brand-text {
+            color: #ffffff;
+            font-size: 1.35rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+        .auth-brand-text small {
+            display: block;
+            color: #f07a1a;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            padding: 32px 28px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <a class="auth-brand" href="/">
+            <img src="~/images/logo.png" alt="Ubuhlebethu Logo" />
+            <div class="auth-brand-text">
+                Ubuhlebethu
+                <small>ConnectPro</small>
+            </div>
+        </a>
+        <div class="auth-card">
+            @RenderBody()
+        </div>
+    </div>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

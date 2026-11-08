@@ -1,0 +1,73 @@
+@model UbuhlebethuConnectPro.Core.Models.QuoteRequest
+@{
+    ViewData["Title"] = "Review Quotation — " + Model.Reference;
+    string statusBadge = Model.Status switch
+    {
+        "Approved" => "badge-success",
+        "Paid"     => "badge-success",
+        "Invoiced" => "badge-primary",
+        "Reviewed" => "badge-info",
+        "Submitted"=> "badge-warning",
+        _          => "badge-neutral"
+    };
+}
+
+<!-- Back nav -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+    <a asp-controller="Dashboard" asp-action="PendingQuotes" class="btn btn-secondary btn-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Pending Quotes
+    </a>
+    <div style="font-size:0.78rem; color:var(--text-muted);">
+        Office &rsaquo; Pending Quotes &rsaquo; <strong style="color:var(--text-primary);">@Model.Reference</strong>
+    </div>
+</div>
+
+<!-- Page header -->
+<div class="page-header" style="margin-bottom:16px;">
+    <div>
+        <h1 class="page-title">Review Quotation @Model.Reference</h1>
+        <p class="page-subtitle">Submitted @Model.RequestDate.ToLocalTime().ToString("dd MMM yyyy")</p>
+    </div>
+    <div class="page-actions">
+        <span class="badge @statusBadge" style="font-size:0.9rem; padding:7px 16px;">@Model.Status</span>
+        <form asp-controller="Quotation" asp-action="GenerateInvoice" asp-route-id="@Model.Id" method="post" style="display:inline;"><button type="submit" class="btn btn-action-blue btn-sm" style="display:inline-flex; align-items:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:4px;">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Send Invoice
+        </button></form>
+    </div>
+</div>
+
+<div class="card p-24">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        <div>
+            <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:4px;">Client Name</div>
+            <div style="font-weight:600;">@Model.ClientName</div>
+        </div>
+        <div>
+            <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:4px;">Project Type</div>
+            <div style="font-weight:600;">@Model.ProjectType</div>
+        </div>
+        <div>
+            <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:4px;">Estimated Budget</div>
+            <div style="font-weight:600;">R @Model.EstimatedBudget.ToString("N0")</div>
+        </div>
+        <div>
+            <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:4px;">Location</div>
+            <div style="font-weight:600;">@Model.SiteLocation</div>
+        </div>
+    </div>
+    
+    <div style="margin-top:20px;">
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:4px;">Description</div>
+        <div style="background:var(--color-bg); padding:12px; border-radius:4px; font-size:0.9rem;">
+            @Model.ProjectDescription
+        </div>
+    </div>
+</div>
+

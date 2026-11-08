@@ -1,0 +1,101 @@
+@model UbuhlebethuConnectPro.WebApp.Controllers.AIEstimateInput
+@{ ViewData["Title"] = "AI Draft Estimate Tool"; }
+
+<div class="page-header">
+    <h1 class="page-title">AI Draft Estimate Tool</h1>
+    <p class="page-subtitle">Generate automated BOQ estimates from project parameters</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div class="card">
+        <div class="card-header">
+            <h2 style="margin: 0; font-size: 1.25rem;">Estimate Calculator</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-controller="Office" asp-action="CalculateEstimate">
+                @Html.AntiForgeryToken()
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Project Type</label>
+                    <select class="form-select" name="ProjectType">
+                        <option value="RDP/Social Housing">RDP/Social Housing</option>
+                        <option value="Civil Infrastructure">Civil Infrastructure</option>
+                        <option value="School/Clinic">School/Clinic</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Site Area (m²)</label>
+                    <input type="number" class="form-control" name="SiteArea" min="0" step="1" value="@Model.SiteArea">
+                    <span asp-validation-for="SiteArea" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Number of Units (RDP only)</label>
+                    <input type="number" class="form-control" name="NumberOfUnits" min="0" step="1" value="@Model.NumberOfUnits">
+                    <span asp-validation-for="NumberOfUnits" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Quality Grade</label>
+                    <select class="form-select" name="QualityGrade">
+                        <option value="Standard">Standard</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Premium">Premium</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label class="form-label">Location Province</label>
+                    <select class="form-select" name="Province">
+                        <option value="Gauteng">Gauteng</option>
+                        <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                        <option value="Limpopo">Limpopo</option>
+                        <option value="Western Cape">Western Cape</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Generate Estimate</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 style="margin: 0; font-size: 1.25rem;">Estimate Results</h2>
+        </div>
+        <div class="card-body">
+            <div style="background-color: #faf8f8; border: 1px solid #eee; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                @if (Model.EstimatedAmount.HasValue)
+                {
+                    <div style="font-size:2rem;font-weight:700;color:var(--color-primary);">R @Model.EstimatedAmount.Value.ToString("N2")</div>
+                    <p style="color:#666;margin:8px 0 0;">Estimated draft cost for @Model.ProjectType in @Model.Province.</p>
+                }
+                else
+                {
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;">
+                    <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                    <line x1="8" y1="6" x2="16" y2="6"></line>
+                    <line x1="16" y1="14" x2="16" y2="14.01"></line>
+                    <line x1="12" y1="14" x2="12" y2="14.01"></line>
+                    <line x1="8" y1="14" x2="8" y2="14.01"></line>
+                    <line x1="16" y1="10" x2="16" y2="10.01"></line>
+                    <line x1="12" y1="10" x2="12" y2="10.01"></line>
+                    <line x1="8" y1="10" x2="8" y2="10.01"></line>
+                    <line x1="16" y1="18" x2="16" y2="18.01"></line>
+                    <line x1="12" y1="18" x2="12" y2="18.01"></line>
+                    <line x1="8" y1="18" x2="8" y2="18.01"></line>
+                </svg>
+                <p style="color: #666; margin: 0;">Complete the form to generate an AI-assisted estimate</p>
+                }
+            </div>
+            
+            <div style="border-left: 3px solid var(--color-accent, #f97316); background-color: #fff7ed; padding: 12px; border-radius: 4px;">
+                <p style="margin: 0; font-size: 0.9rem;">
+                    <strong>Prototype:</strong> In the full system, Gemini AI analyses comparable projects, material costs, and regional pricing to generate accurate BOQ estimates.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,1002 @@
+@model UbuhlebethuConnectPro.Core.Models.Job
+
+@{
+    ViewData["Title"] = "Job Details — " + Model.JobNumber;
+    decimal pctCollected = Model.EstimatedCost > 0
+        ? Model.InvoicedAmount / Model.EstimatedCost * 100 : 0;
+    decimal outstanding = Model.EstimatedCost - Model.InvoicedAmount;
+    string progColor = Model.Progress >= 70 ? "success" : Model.Progress >= 40 ? "warning" : "primary";
+    var acts = (ViewBag.Activities as List<UbuhlebethuConnectPro.WebApp.ApiClient.ProjectActivityDto>) ?? new List<UbuhlebethuConnectPro.WebApp.ApiClient.ProjectActivityDto>();
+    bool canEdit = (ViewBag.CanEdit as bool?) ?? false;
+    var logs = acts.Where(a => a.Kind == "DailyLog").ToList();
+    var milestones = acts.Where(a => a.Kind == "Milestone").OrderBy(a => a.DueDate ?? "9999").ToList();
+    var orders = acts.Where(a => a.Kind == "PurchaseOrder").ToList();
+    var docs = acts.Where(a => a.Kind == "Document").ToList();
+    var contact = acts.FirstOrDefault(a => a.Kind == "ClientContact");
+    string clientPhone = string.IsNullOrWhiteSpace(contact?.Body) ? "Not provided" : contact!.Body!;
+    string clientEmail = string.IsNullOrWhiteSpace(contact?.Status) ? "Not provided" : contact!.Status!;
+    string Stamp(string iso) => DateTime.TryParse(iso, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var dt)
+        ? dt.ToLocalTime().ToString("dd MMM yyyy, HH:mm") : "";
+    string DayOnly(string? iso) => DateTime.TryParse(iso, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt)
+        ? dt.ToString("dd MMM yyyy") : "No date";
+    string MsBadge(string? st) => st == "Complete" ? "badge-success" : st == "In Progress" ? "badge-warning" : "badge-neutral";
+    string PoRef(string id) => "PO-" + id.Replace("-", "").Substring(0, 6).ToUpperInvariant();
+    string Money(string? v) => decimal.TryParse(v, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d)
+        ? "R " + d.ToString("N2") : "R 0.00";
+}
+@Html.AntiForgeryToken()
+@if (!canEdit)
+{
+    <style>.edit-only { display: none !important; }</style>
+}
+
+<style>
+    /* Strict Tab Isolation */
+    .tab-content > .tab-pane {
+        display: none !important;
+    }
+
+        .tab-content > .tab-pane.active {
+            display: block !important;
+        }
+
+    .tab-nav-link {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        transition: all 0.2s ease;
+    }
+
+        .tab-nav-link:hover {
+            color: var(--color-primary, #C5221F);
+            background: rgba(197, 34, 31, 0.05);
+        }
+
+        .tab-nav-link.active {
+            color: #ffffff !important;
+            background-color: var(--color-primary, #C5221F) !important;
+        }
+
+    /* Modal Backdrop and Popup Styling */
+    .app-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.65);
+        z-index: 10500;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+        .app-modal.show {
+            display: flex !important;
+        }
+
+    .app-modal-dialog {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 520px;
+        max-height: 90vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        animation: modalScaleIn 0.2s ease-out forwards;
+    }
+
+    .modal-head {
+        background-color: var(--color-primary, #C5221F);
+        color: #ffffff;
+        padding: 14px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .modal-head h5 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+    .modal-close-btn {
+        background: none;
+        border: none;
+        color: #ffffff;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.85;
+    }
+
+        .modal-close-btn:hover {
+            opacity: 1;
+        }
+
+    @@keyframes modalScaleIn {
+        from {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+<!-- Back nav + breadcrumb -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+    <a asp-action="Index" class="btn btn-secondary btn-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+            <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Back
+    </a>
+    <div style="font-size:0.78rem; color:var(--text-muted);">
+        Dashboard &rsaquo; Jobs &rsaquo; <strong style="color:var(--text-primary);">@Model.JobNumber</strong>
+    </div>
+</div>
+
+<!-- Context header strip -->
+<div style="background:var(--color-topbar-bg, #0f172a); border-radius:var(--radius-lg, 8px); padding:12px 20px; margin-bottom:16px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:8px; color:#a8bcd0; font-size:0.78rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+        </svg>
+        <span style="color:#fff; font-weight:600;" id="stripClientName">@Model.ClientName</span>
+    </div>
+    <div style="color:#a8bcd0; font-size:0.78rem;">|</div>
+    <div style="color:#a8bcd0; font-size:0.78rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px; margin-right:4px;">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        </svg>
+        <span id="stripDescription">@Model.Description</span>
+    </div>
+    <div style="color:#a8bcd0; font-size:0.78rem;">|</div>
+    <div style="color:#a8bcd0; font-size:0.78rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px; margin-right:4px;">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        Job @Model.JobNumber
+    </div>
+
+    <!-- Right side metrics -->
+    <div style="margin-left:auto; display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+        <div style="text-align:right;">
+            <div style="font-size:0.62rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#a8bcd0;">Progress</div>
+            <div style="font-size:0.85rem; font-weight:700; color:#fff;">@Model.Progress%</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:0.62rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#a8bcd0;">Variance</div>
+            <div style="font-size:0.85rem; font-weight:700; color:@(Model.Variance > 20 ? "#f87171" : "#4ade80");">@Model.Variance%</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:0.62rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#a8bcd0;">Invoiced</div>
+            <div style="font-size:0.85rem; font-weight:700; color:#fff;">R @Model.InvoicedAmount.ToString("N0")</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab buttons bar -->
+<div class="tab-nav nav nav-tabs" id="myTab" role="tablist" style="border-bottom:1px solid #e2e8f0; gap:10px; margin-bottom:20px; padding-bottom:8px;">
+    <button type="button" class="tab-nav-link active" onclick="activateTab(event, 'job-details')">Job Details</button>
+    <button type="button" class="tab-nav-link" onclick="activateTab(event, 'daily-logs')">Daily Logs</button>
+    <button type="button" class="tab-nav-link" onclick="activateTab(event, 'schedule')">Schedule</button>
+    <button type="button" class="tab-nav-link" onclick="activateTab(event, 'purchase-orders')">Purchase Orders</button>
+    <button type="button" class="tab-nav-link" onclick="activateTab(event, 'documents')">Documents</button>
+    <a class="tab-nav-link" asp-controller="SiteReports" asp-action="Project" asp-route-id="@Model.Id">Site Reports &amp; Photos</a>
+    <a class="tab-nav-link" asp-controller="Attendance" asp-action="Project" asp-route-id="@Model.Id">Attendance</a>
+</div>
+
+<div class="tab-content" id="myTabContent">
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 1: JOB DETAILS VIEW                                     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-pane active" id="job-details" role="tabpanel">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+            <!-- Left column -->
+            <div>
+                <!-- Job Details Card -->
+                <div class="card mb-3 shadow-sm border">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <span class="card-title fw-bold">Job Details</span>
+                        <button type="button" class="btn btn-secondary btn-sm edit-only" onclick="openAppModal('editJobModal')" style="display:inline-flex; align-items:center; gap:4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div style="padding:0 20px;">
+                            <div class="detail-field">
+                                <div class="detail-key">Number</div>
+                                <div class="detail-val">@Model.JobNumber</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Description</div>
+                                <div class="detail-val" id="dispJobDescription">@Model.Description</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Building Type</div>
+                                <div class="detail-val" id="dispJobBuildingType">@Model.BuildingType</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Tax Profile</div>
+                                <div class="detail-val" id="dispTaxProfile">RSA — Standard (15% VAT)</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Invoice Method</div>
+                                <div class="detail-val" id="dispInvoiceMethod">Fixed Price (R @Model.EstimatedCost.ToString("N2"))</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Site Manager</div>
+                                <div class="detail-val" id="dispSiteManager">@Model.SiteManager</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">NHBRC Status</div>
+                                <div class="detail-val" id="dispNhbrcContainer">
+                                    @if (Model.NhbrcCompliant)
+                                    {
+                                        <span class="badge badge-success">Verified</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning">Pending</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Completion bar -->
+                        <div style="padding:16px 20px; border-top:1px solid var(--color-border, #e2e8f0); margin-top:8px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Overall Completion</span>
+                                <span id="projectProgressText" style="font-size:0.78rem; font-weight:700; color:var(--text-primary);">@Model.Progress%</span>
+                            </div>
+                            <div class="progress-track" style="height:10px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+                                <div id="projectProgressBar" class="progress-fill @progColor" style="width:@(Model.Progress)%; height:100%; transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Details Card -->
+                <div class="card mb-3 shadow-sm border">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <span class="card-title fw-bold">Client Details</span>
+                        <button type="button" class="btn btn-secondary btn-sm edit-only" onclick="openAppModal('editClientModal')" style="display:inline-flex; align-items:center; gap:4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div style="padding:0 20px;">
+                            <div class="detail-field">
+                                <div class="detail-key">Name</div>
+                                <div class="detail-val" id="dispClientName">@Model.ClientName</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Address</div>
+                                <div class="detail-val" id="dispClientLocation">@Model.Location</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Phone</div>
+                                <div class="detail-val" id="dispClientPhone">@clientPhone</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Email</div>
+                                <div class="detail-val" id="dispClientEmail">@clientEmail</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Card -->
+                <div class="card shadow-sm border">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <span class="card-title fw-bold">Documents</span>
+                        <button type="button" class="btn btn-secondary btn-sm edit-only" onclick="openAppModal('uploadDocModal')" style="display:inline-flex; align-items:center; gap:4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Upload
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <ul class="doc-list" id="jobDocList" style="list-style:none; padding:0; margin:0;">
+                            @if (docs.Count == 0)
+                            {
+                                <li class="small text-muted" style="padding:8px 0;">No documents uploaded yet.</li>
+                            }
+                            @foreach (var d in docs.Take(5))
+                            {
+                                <li class="doc-item" style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+                                    <div>
+                                        <div class="doc-name" style="font-weight:600; font-size:0.85rem;">@d.Title</div>
+                                        <div class="small text-muted">Uploaded @Stamp(d.CreatedAt)</div>
+                                    </div>
+                                    <a class="btn btn-sm btn-outline-secondary" asp-action="DownloadDocument" asp-route-id="@d.Id">Download</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column -->
+            <div>
+                <!-- Work Location Card -->
+                <div class="card mb-3 shadow-sm border">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <span class="card-title fw-bold">Work Location</span>
+                        <button type="button" class="btn btn-secondary btn-sm edit-only" onclick="openAppModal('editLocationModal')" style="display:inline-flex; align-items:center; gap:4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
+                    <div class="card-body" style="padding:0;">
+                        <div style="padding:12px 20px 0; border-bottom:1px solid var(--color-border, #e2e8f0);">
+                            <div class="detail-field" style="border-bottom:none; padding-bottom:12px;">
+                                <div class="detail-key">Address</div>
+                                <div class="detail-val">
+                                    <a id="dispMapLink" href="https://maps.google.com?q=@Uri.EscapeDataString(Model.Location)"
+                                       target="_blank" style="color:var(--color-primary, #C5221F); font-weight:600;">
+                                        @Model.Location, South Africa
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="height:220px; overflow:hidden;">
+                            <iframe id="mapFrame"
+                                    src="https://maps.google.com/maps?q=@Uri.EscapeDataString(Model.Location),South+Africa&t=&z=12&ie=UTF8&iwloc=&output=embed"
+                                    style="width:100%; height:100%; border:0; display:block;"
+                                    allowfullscreen=""
+                                    loading="lazy">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Summary Card -->
+                <div class="card mb-3 shadow-sm border">
+                    <div class="card-header bg-white">
+                        <span class="card-title fw-bold">Financial Summary</span>
+                    </div>
+                    <div class="card-body" style="padding:0;">
+                        <div style="padding:0 20px;">
+                            <div class="detail-field">
+                                <div class="detail-key">Est. Budget</div>
+                                <div class="detail-val fw-600" id="dispEstBudget">R @Model.EstimatedCost.ToString("N2")</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Invoiced</div>
+                                <div class="detail-val" style="color:var(--color-success, #22c55e); font-weight:600;">R @Model.InvoicedAmount.ToString("N2")</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">Outstanding</div>
+                                <div class="detail-val" style="color:var(--color-warning, #eab308); font-weight:600;" id="dispOutstanding">R @outstanding.ToString("N2")</div>
+                            </div>
+                            <div class="detail-field">
+                                <div class="detail-key">% Collected</div>
+                                <div class="detail-val">
+                                    <div class="progress-bar-wrap" style="display:flex; align-items:center; gap:8px;">
+                                        <div class="progress-track" style="flex:1; height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+                                            <div class="progress-fill @(pctCollected >= 70 ? "success" : pctCollected >= 40 ? "warning" : "muted")"
+                                                 style="width:@((int)pctCollected)%; height:100%; background:var(--color-primary, #C5221F);"></div>
+                                        </div>
+                                        <span class="progress-pct" style="font-size:0.75rem; font-weight:700;">@((int)pctCollected)%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Card with Instant Save -->
+                <div class="card shadow-sm border">
+                    <div class="card-header bg-white">
+                        <span class="card-title fw-bold">Notes</span>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="noteArea" class="form-control mb-3" rows="4"
+                                  placeholder="Tap to create a note (use Shift+Enter for new paragraphs)..."
+                                  style="border:1px dashed var(--color-border-dark, #cbd5e1); background:var(--color-content-bg, #f8fafc);">@Model.Notes</textarea>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span id="noteSavedStatus" class="text-success small fw-bold" style="display:none;">Saved!</span>
+                            <button type="button" class="btn btn-primary btn-sm ms-auto" onclick="saveJobNoteInline()">Save Note</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 2: DAILY LOGS VIEW                                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="daily-logs" role="tabpanel">
+        <div class="card mt-3 shadow-sm border">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <h5 class="mb-0" style="color:var(--color-primary, #C5221F); font-weight:700;">Site Daily Logs</h5>
+                <button type="button" class="btn btn-primary btn-sm edit-only" onclick="openAppModal('addDailyLogModal')">
+                    + Add Daily Log
+                </button>
+            </div>
+            <div class="card-body" id="dailyLogsList">
+                @if (logs.Count == 0)
+                {
+                    <p class="text-muted mb-0">No daily logs yet. Use "Add Daily Log" to record the first one.</p>
+                }
+                @foreach (var l in logs)
+                {
+                    <div class="p-3 border-start border-3 border-danger bg-light rounded mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>@l.Title</strong>
+                            <span class="text-muted small">@Stamp(l.CreatedAt)@(string.IsNullOrEmpty(l.CreatedBy) ? "" : " · " + l.CreatedBy)</span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1" style="white-space:pre-wrap;">@l.Body</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 3: SCHEDULE VIEW                                        -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="schedule" role="tabpanel">
+        <div class="card mt-3 shadow-sm border">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <h5 class="mb-0" style="color:var(--color-primary, #C5221F); font-weight:700;">Project Schedule & Timeline</h5>
+                <button type="button" class="btn btn-primary btn-sm edit-only" onclick="openAppModal('addScheduleModal')">
+                    + Add Phase Milestone
+                </button>
+            </div>
+            <div class="card-body">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Phase Description</th>
+                            <th>Target Date</th>
+                            <th>Status</th>
+                            <th>Assigned Staff</th>
+                            <th class="edit-only"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody">
+                        @if (milestones.Count == 0)
+                        {
+                            <tr><td colspan="5" class="text-muted">No milestones yet. Use "Add Phase Milestone".</td></tr>
+                        }
+                        @foreach (var m in milestones)
+                        {
+                            <tr>
+                                <td>@m.Title</td>
+                                <td>@DayOnly(m.DueDate)</td>
+                                <td><span class="badge @MsBadge(m.Status)">@m.Status</span></td>
+                                <td>@(string.IsNullOrEmpty(m.CreatedBy) ? "Office / QS Team" : m.CreatedBy)</td>
+                                <td class="edit-only text-end">
+                                    @if (m.Status != "Complete")
+                                    {
+                                        <form asp-action="SetActivityStatus" method="post" style="display:inline;">
+                                            <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="activityId" value="@m.Id" />
+                                            <input type="hidden" name="status" value="Complete" /><input type="hidden" name="tab" value="schedule" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">Mark complete</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 4: PURCHASE ORDERS VIEW                                 -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="purchase-orders" role="tabpanel">
+        <div class="card mt-3 shadow-sm border">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <h5 class="mb-0" style="color:var(--color-primary, #C5221F); font-weight:700;">Purchase Orders & Material Requisitions</h5>
+                <button type="button" class="btn btn-primary btn-sm edit-only" onclick="openAppModal('addPOModal')">
+                    + Create Purchase Order
+                </button>
+            </div>
+            <div class="card-body">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>PO Ref</th>
+                            <th>Vendor / Supplier</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th class="edit-only"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="poTableBody">
+                        @if (orders.Count == 0)
+                        {
+                            <tr><td colspan="6" class="text-muted">No purchase orders yet. Use "Create Purchase Order".</td></tr>
+                        }
+                        @foreach (var o in orders)
+                        {
+                            <tr>
+                                <td><strong>@PoRef(o.Id)</strong></td>
+                                <td>@o.Title</td>
+                                <td>@o.Body</td>
+                                <td>@Money(o.Amount)</td>
+                                <td><span class="badge @(o.Status == "Pending Sign-off" ? "badge-warning" : o.Status == "Approved" ? "badge-info" : "badge-success")">@o.Status</span></td>
+                                <td class="edit-only text-end">
+                                    @if (o.Status != "Delivered")
+                                    {
+                                        <form asp-action="SetActivityStatus" method="post" style="display:inline;">
+                                            <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="activityId" value="@o.Id" />
+                                            <input type="hidden" name="status" value="@(o.Status == "Pending Sign-off" ? "Approved" : "Delivered")" /><input type="hidden" name="tab" value="purchase-orders" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">@(o.Status == "Pending Sign-off" ? "Approve" : "Mark delivered")</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 5: DOCUMENTS VIEW                                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-pane" id="documents" role="tabpanel">
+        <div class="card mt-3 shadow-sm border">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <h5 class="mb-0" style="color:var(--color-primary, #C5221F); font-weight:700;">Document Manager</h5>
+                <button type="button" class="btn btn-primary btn-sm edit-only" onclick="openAppModal('uploadDocModal')">
+                    + Upload New Document
+                </button>
+            </div>
+            <div class="card-body">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Document Title</th>
+                            <th>Type</th>
+                            <th>Date Added</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullDocTableBody">
+                        @if (docs.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-muted">No documents yet. Use "Upload New Document".</td></tr>
+                        }
+                        @foreach (var d in docs)
+                        {
+                            <tr>
+                                <td><strong>@d.Title</strong><div class="small text-muted">@d.FileName</div></td>
+                                <td>@d.Body</td>
+                                <td>@Stamp(d.CreatedAt)</td>
+                                <td class="text-end"><a class="btn btn-sm btn-outline-secondary" asp-action="DownloadDocument" asp-route-id="@d.Id">Download</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALS                                                      -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 1. Edit Job Details Modal -->
+<div class="app-modal" id="editJobModal" onclick="closeAppModalOnOutside(event, 'editJobModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Edit Job Details</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('editJobModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Description</label>
+                <input type="text" id="mDescription" class="form-control" value="@Model.Description" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Building Type</label>
+                <input type="text" id="mBuildingType" class="form-control" value="@Model.BuildingType" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Estimated Cost / Budget (ZAR)</label>
+                <input type="number" step="0.01" id="mEstimatedCost" class="form-control" value="@Model.EstimatedCost" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Status</label>
+                <select id="mStatus" class="form-select">
+                    @foreach (var st in new[] { "Planning", "In Progress", "On Hold", "Completed" })
+                    {
+                        <option value="@st" selected="@(Model.Status == st ? "selected" : null)">@st</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Progress (%)</label>
+                <input type="number" min="0" max="100" step="1" id="mProgress" class="form-control" value="@Model.Progress" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Site Manager</label>
+                <input type="text" id="mSiteManager" class="form-control" value="@Model.SiteManager" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">NHBRC Compliance Status</label>
+                <select id="mNhbrcStatus" class="form-select">
+                    <option value="Verified" selected="@(Model.NhbrcCompliant ? "selected" : null)">Verified</option>
+                    <option value="Pending" selected="@(!Model.NhbrcCompliant ? "selected" : null)">Pending</option>
+                </select>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('editJobModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="saveJobModalChanges()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Edit Client Modal -->
+<div class="app-modal" id="editClientModal" onclick="closeAppModalOnOutside(event, 'editClientModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Edit Client Information</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('editClientModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Client Name / Business Name</label>
+                <input type="text" id="mClientName" class="form-control" value="@Model.ClientName" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Client Contact Phone</label>
+                <input type="text" id="mClientPhone" class="form-control" value="@(clientPhone == "Not provided" ? "" : clientPhone)" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Client Email</label>
+                <input type="email" id="mClientEmail" class="form-control" value="@(clientEmail == "Not provided" ? "" : clientEmail)" />
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('editClientModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="saveClientModalChanges()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Edit Location Modal -->
+<div class="app-modal" id="editLocationModal" onclick="closeAppModalOnOutside(event, 'editLocationModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Edit Work Location</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('editLocationModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Physical Site Address</label>
+                <input type="text" id="mLocation" class="form-control" value="@Model.Location" />
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('editLocationModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="saveLocationModalChanges()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Upload Document Modal -->
+<div class="app-modal" id="uploadDocModal" onclick="closeAppModalOnOutside(event, 'uploadDocModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Upload Project Document</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('uploadDocModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Document Title</label>
+                <input type="text" id="mDocName" class="form-control" placeholder="e.g. Structural_Engineering_Certificate.pdf" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Select File</label>
+                <input type="file" id="mDocFile" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.txt" />
+                <div class="form-text">PDF, image, Word, Excel, CSV or text. Maximum 2 MB.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Category</label>
+                <select id="mDocCategory" class="form-select">
+                    <option>General</option><option>Compliance</option><option>Bill of Quantities</option><option>Drawings</option><option>Contract</option><option>Invoice</option>
+                </select>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('uploadDocModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="saveDocumentModalUpload()">Upload Document</button>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Add Daily Log Modal (Replaces Browser Prompt) -->
+<div class="app-modal" id="addDailyLogModal" onclick="closeAppModalOnOutside(event, 'addDailyLogModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Add Site Daily Log</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('addDailyLogModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Activity / Inspection Title</label>
+                <input type="text" id="mDailyLogTitle" class="form-control" placeholder="e.g. Concrete Pour & Rebar Inspection" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Detailed Site Observation</label>
+                <textarea id="mDailyLogText" class="form-control" rows="3" placeholder="Enter weather, crew activity, safety remarks, and delivery notes..."></textarea>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('addDailyLogModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="saveDailyLogModal()">Save Entry</button>
+        </div>
+    </div>
+</div>
+
+<!-- 6. Add Phase Milestone Modal (Replaces Browser Prompt) -->
+<div class="app-modal" id="addScheduleModal" onclick="closeAppModalOnOutside(event, 'addScheduleModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Add Schedule Milestone</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('addScheduleModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Milestone / Phase Description</label>
+                <input type="text" id="mScheduleTitle" class="form-control" placeholder="e.g. Electrical & Plumbing First Fix" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Target Completion Date</label>
+                <input type="date" id="mScheduleDate" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Status</label>
+                <select id="mScheduleStatus" class="form-select">
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Complete">Complete</option>
+                </select>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('addScheduleModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="saveScheduleModal()">Save Milestone</button>
+        </div>
+    </div>
+</div>
+
+<!-- 7. Create Purchase Order Modal (Replaces Browser Prompt) -->
+<div class="app-modal" id="addPOModal" onclick="closeAppModalOnOutside(event, 'addPOModal')">
+    <div class="app-modal-dialog">
+        <div class="modal-head">
+            <h5>Create Purchase Order</h5>
+            <button type="button" class="modal-close-btn" onclick="closeAppModal('addPOModal')">&times;</button>
+        </div>
+        <div class="p-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Vendor / Supplier Name</label>
+                <input type="text" id="mPOVendor" class="form-control" placeholder="e.g. Soweto ReadyMix" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Materials / Items Description</label>
+                <input type="text" id="mPODescription" class="form-control" placeholder="e.g. 50x Bags NPC Cement 42.5N" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Order Value (ZAR)</label>
+                <input type="number" step="0.01" id="mPOAmount" class="form-control" placeholder="e.g. 6500.00" />
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeAppModal('addPOModal')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#C5221F; border-color:#C5221F;" onclick="savePOModal()">Issue PO</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 1. Tab Switching Function
+        function activateTab(event, targetTabId) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            // Toggle button states
+            document.querySelectorAll('#myTab .tab-nav-link').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+
+            // Toggle pane visibility
+            document.querySelectorAll('#myTabContent .tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+                pane.style.display = 'none';
+            });
+
+            const activePane = document.getElementById(targetTabId);
+            if (activePane) {
+                activePane.classList.add('active');
+                activePane.style.display = 'block';
+            }
+        }
+
+        // 2. Modal Open / Close Controls
+        function openAppModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }
+
+        function closeAppModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function closeAppModalOnOutside(e, modalId) {
+            if (e.target.id === modalId) {
+                closeAppModal(modalId);
+            }
+        }
+
+        // 3. Saving: every button posts to the server and reloads on success, so what you see is what was saved.
+        const detailsId = '@Model.Id';
+        function csrf() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+
+        async function postForm(action, fields, btn) {
+            const fd = new FormData();
+            fd.append('__RequestVerificationToken', csrf());
+            fd.append('id', detailsId);
+            Object.keys(fields).forEach(k => { if (fields[k] !== undefined && fields[k] !== null) fd.append(k, fields[k]); });
+            if (btn) btn.disabled = true;
+            try {
+                const r = await fetch('/Dashboard/' + action, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                let j = null;
+                try { j = await r.json(); } catch (e) { }
+                if (!r.ok || !j || !j.ok) throw new Error((j && j.error) || 'Could not save. Please try again.');
+                return j;
+            } finally { if (btn) btn.disabled = false; }
+        }
+
+        function finish(modalId, message, tab) {
+            closeAppModal(modalId);
+            showToast(message, 'success');
+            location.hash = tab;
+            setTimeout(() => location.reload(), 700);
+        }
+        function fail(e) { showToast(e.message || 'Could not save.', 'error'); }
+        const val = id => document.getElementById(id).value;
+
+        function saveJobModalChanges() {
+            const btn = event.currentTarget;
+            const progress = parseInt(val('mProgress'), 10);
+            if (isNaN(progress) || progress < 0 || progress > 100) { showToast('Progress must be between 0 and 100.', 'error'); return; }
+            postForm('SaveJob', { description: val('mDescription'), buildingType: val('mBuildingType'), estimatedCost: val('mEstimatedCost'),
+                                  siteManager: val('mSiteManager'), nhbrcStatus: val('mNhbrcStatus'), status: val('mStatus'), progress: progress }, btn)
+                .then(() => finish('editJobModal', 'Job details saved.', 'job-details')).catch(fail);
+        }
+
+        function saveClientModalChanges() {
+            const btn = event.currentTarget;
+            postForm('SaveClient', { clientName: val('mClientName'), phone: val('mClientPhone'), email: val('mClientEmail') }, btn)
+                .then(() => finish('editClientModal', 'Client details saved.', 'job-details')).catch(fail);
+        }
+
+        function saveLocationModalChanges() {
+            const btn = event.currentTarget;
+            postForm('SaveLocation', { location: val('mLocation') }, btn)
+                .then(() => finish('editLocationModal', 'Work location saved.', 'job-details')).catch(fail);
+        }
+
+        async function saveDocumentModalUpload() {
+            const btn = event.currentTarget;
+            const file = document.getElementById('mDocFile').files[0];
+            if (!file) { showToast('Choose a file to upload.', 'error'); return; }
+            if (file.size > 2 * 1024 * 1024) { showToast('The file is too large (limit 2 MB).', 'error'); return; }
+            const fd = new FormData();
+            fd.append('__RequestVerificationToken', csrf());
+            fd.append('id', detailsId);
+            fd.append('title', val('mDocName'));
+            fd.append('category', val('mDocCategory'));
+            fd.append('file', file);
+            btn.disabled = true;
+            try {
+                const r = await fetch('@Url.Action("UploadDocument", "Dashboard")', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                let j = null; try { j = await r.json(); } catch (e) { }
+                if (!r.ok || !j || !j.ok) throw new Error((j && j.error) || 'Could not upload. Please try again.');
+                finish('uploadDocModal', 'Document uploaded.', 'documents');
+            } catch (e) { fail(e); } finally { btn.disabled = false; }
+        }
+
+        function addActivity(kind, fields, modalId, message, tab, btn) {
+            postForm('AddActivity', Object.assign({ kind: kind }, fields), btn)
+                .then(() => finish(modalId, message, tab)).catch(fail);
+        }
+
+        function saveDailyLogModal() {
+            if (!val('mDailyLogTitle').trim() || !val('mDailyLogText').trim()) { showToast('Enter a title and the site observation.', 'error'); return; }
+            addActivity('DailyLog', { title: val('mDailyLogTitle'), body: val('mDailyLogText') }, 'addDailyLogModal', 'Daily log saved.', 'daily-logs', event.currentTarget);
+        }
+
+        function saveScheduleModal() {
+            if (!val('mScheduleTitle').trim()) { showToast('Enter a milestone description.', 'error'); return; }
+            addActivity('Milestone', { title: val('mScheduleTitle'), dueDate: val('mScheduleDate'), status: val('mScheduleStatus') }, 'addScheduleModal', 'Milestone saved.', 'schedule', event.currentTarget);
+        }
+
+        function savePOModal() {
+            if (!val('mPOVendor').trim() || !val('mPODescription').trim()) { showToast('Enter the supplier and the items.', 'error'); return; }
+            const amount = parseFloat(val('mPOAmount'));
+            if (isNaN(amount) || amount <= 0) { showToast('Enter an order value greater than zero.', 'error'); return; }
+            addActivity('PurchaseOrder', { title: val('mPOVendor'), body: val('mPODescription'), amount: amount }, 'addPOModal', 'Purchase order created.', 'purchase-orders', event.currentTarget);
+        }
+
+        function saveJobNoteInline() {
+            const btn = event.currentTarget;
+            postForm('SaveNotes', { notes: document.getElementById('noteArea').value }, btn).then(() => {
+                const stat = document.getElementById('noteSavedStatus');
+                stat.style.display = 'inline';
+                setTimeout(() => { stat.style.display = 'none'; }, 2000);
+                showToast('Notes saved.', 'success');
+            }).catch(fail);
+        }
+
+        // Initialize Default Active Tab on DOM Ready
+        document.addEventListener('DOMContentLoaded', function () {
+            const tab = (location.hash || '#job-details').substring(1);
+            const valid = ['job-details', 'daily-logs', 'schedule', 'purchase-orders', 'documents'];
+            const target = valid.includes(tab) ? tab : 'job-details';
+            document.querySelectorAll('#myTab .tab-nav-link').forEach(b => {
+                b.classList.toggle('active', (b.getAttribute('onclick') || '').includes("'" + target + "'"));
+            });
+            activateTab(null, target);
+        });
+    </script>
+}

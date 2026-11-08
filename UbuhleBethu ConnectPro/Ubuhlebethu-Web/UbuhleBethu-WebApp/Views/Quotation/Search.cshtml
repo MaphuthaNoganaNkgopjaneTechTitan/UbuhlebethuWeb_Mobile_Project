@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Search Quotations";
+    var results = ViewBag.Results as IEnumerable<UbuhlebethuConnectPro.Core.Models.QuoteRequest>;
+    string query = ViewBag.Query ?? "";
+}
+
+<div class="page-header">
+    <h1 class="page-title">Search Quotations</h1>
+</div>
+
+<form method="get" action="/Quotation/Search" style="margin-bottom: 32px; display: flex; gap: 8px;">
+    <input type="text" name="query" value="@query" class="form-control" style="font-size: 1rem; padding: 12px; flex-grow: 1;" placeholder="Search by reference, project type, or location..." />
+    <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Search</button>
+</form>
+
+@if (results != null)
+{
+    if (results.Any())
+    {
+        <p style="margin-bottom: 16px; font-weight: bold;">Found @results.Count() results for "@query"</p>
+        
+        <div class="data-table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Project Type</th>
+                        <th>Site Location</th>
+                        <th>Date Submitted</th>
+                        <th>Status</th>
+                        <th>Estimate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in results)
+                    {
+                        <tr>
+                            <td>@item.Reference</td>
+                            <td>@item.ProjectType</td>
+                            <td>@item.SiteLocation</td>
+                            <td>@item.RequestDate.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                @{
+                                    string badgeClass = item.Status switch
+                                    {
+                                        "Approved" => "badge-success",
+                                        "Paid" => "badge-success",
+                                        "Declined" => "badge-danger",
+                                        "Submitted" => "badge-primary",
+                                        "Reviewed" => "badge-info",
+                                        _ => "badge-neutral"
+                                    };
+                                }
+                                <span class="badge @badgeClass">@item.Status</span>
+                            </td>
+                            <td>R @item.EstimatedBudget.ToString("N2")</td>
+                            <td>
+                                <a href="/Quotation/Details/@item.Id" class="btn btn-secondary btn-sm">View Details</a>
+                                @if (item.Status == "Approved" || item.Status == "Invoiced")
+                                {
+                                    <a href="/Quotation/Payment/@item.Id" class="btn btn-action-blue btn-sm">Pay Now</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div style="text-align: center; padding: 40px; background-color: #f8f9fa; border-radius: 8px;">
+            <h3 style="color: #6c757d;">No results for "@query"</h3>
+        </div>
+    }
+}
+else
+{
+    <p style="color: #6c757d; font-style: italic;">Enter a search term above to find quotation requests</p>
+}

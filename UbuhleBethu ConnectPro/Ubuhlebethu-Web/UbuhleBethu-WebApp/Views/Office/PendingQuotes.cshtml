@@ -1,0 +1,99 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.QuoteRequest>
+@{ ViewData["Title"] = "Pending Quotes — Office Review"; }
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="page-header">
+    <h1 class="page-title">Pending Quotation Queue</h1>
+    <p class="page-subtitle">Review, estimate, and process incoming client quotation requests</p>
+</div>
+
+<div class="metric-strip">
+    <div class="metric-item">
+        <div class="kpi-label">Total Pending</div>
+        <div class="kpi-value">@Model.Count()</div>
+    </div>
+    <div class="metric-item">
+        <div class="kpi-label">Awaiting Review</div>
+        <div class="kpi-value">@Model.Count(q => q.Status == "Submitted")</div>
+    </div>
+    <div class="metric-item">
+        <div class="kpi-label">Reviewed</div>
+        <div class="kpi-value">@Model.Count(q => q.Status == "Reviewed")</div>
+    </div>
+    <div class="metric-item">
+        <div class="kpi-label">Invoiced</div>
+        <div class="kpi-value">@Model.Count(q => q.Status == "Invoiced")</div>
+    </div>
+</div>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead class="data-table-header">
+            <tr>
+                <th>Reference</th>
+                <th>Client</th>
+                <th>Project Type</th>
+                <th>Location</th>
+                <th>Date</th>
+                <th>Estimate</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var quote in Model)
+            {
+                <tr>
+                    <td>@quote.Reference</td>
+                    <td>@quote.ClientName</td>
+                    <td>@quote.ProjectType</td>
+                    <td>@quote.SiteLocation</td>
+                    <td>@quote.RequestDate.ToString("MMM dd, yyyy")</td>
+                    <td>@(quote.EstimatedBudget > 0 ? $"R {quote.EstimatedBudget:N2}" : "TBD")</td>
+                    <td>
+                        @if (quote.Status == "Submitted")
+                        {
+                            <span class="badge badge-submitted">@quote.Status</span>
+                        }
+                        else if (quote.Status == "Under Review")
+                        {
+                            <span class="badge badge-warning">@quote.Status</span>
+                        }
+                        else if (quote.Status == "ManagerApproved")
+                        {
+                            <span class="badge badge-info">Signed Off</span>
+                        }
+                        else if (quote.Status == "Approved" || quote.Status == "Invoiced")
+                        {
+                            <span class="badge badge-success">@quote.Status</span>
+                        }
+                        else if (quote.Status == "Rejected")
+                        {
+                            <span class="badge badge-danger">@quote.Status</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-neutral">@quote.Status</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="/Office/PreviewQuote/@quote.Id" class="btn btn-action-blue btn-sm">Review</a>
+                        @if (quote.Status == "ManagerApproved")
+                        {
+                            <form method="post" action="/Office/SendInvoice/@quote.Id" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-action-green btn-sm" title="Generate invoice for approved quote (R @quote.EstimatedBudget.ToString("N2"))">Generate Invoice</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

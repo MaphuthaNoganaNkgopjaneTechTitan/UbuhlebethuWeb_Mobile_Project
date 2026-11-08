@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors - Light Mode -->
+    <color name="ubuhlebethu_red">#C62828</color>
+    <color name="ubuhlebethu_dark_red">#8E0000</color>
+    <color name="ubuhlebethu_red_light">#EF9A9A</color>
+    <color name="ubuhlebethu_red_dark">#B71C1C</color>
+
+    <!-- Semantic Backgrounds & Surfaces (WCAG Compliant) -->
+    <color name="colorBackground">#F8F9FA</color>
+    <color name="colorBackgroundSecondary">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorSurfaceVariant">#F1F5F9</color>
+    <color name="colorSurfaceContainer">#F8FAFC</color>
+    <color name="colorSurfaceContainerHigh">#E2E8F0</color>
+    <color name="colorSurfaceContainerHighest">#CBD5E1</color>
+
+    <!-- Cards & Dialogs -->
+    <color name="colorCardBackground">#FFFFFF</color>
+    <color name="colorCardStroke">#E2E8F0</color>
+    <color name="colorDialogBackground">#FFFFFF</color>
+
+    <!-- High-Contrast Typography (WCAG AAA: 15.8:1 contrast on white) -->
+    <color name="colorTextPrimary">#0F172A</color>
+    <color name="colorTextSecondary">#475569</color>
+    <color name="colorTextTertiary">#64748B</color>
+    <color name="colorTextDisabled">#94A3B8</color>
+    <color name="colorTextInverse">#FFFFFF</color>
+
+    <color name="colorOnSurface">#0F172A</color>
+    <color name="colorOnSurfaceVariant">#475569</color>
+    <color name="colorOnSurfaceDisabled">#94A3B8</color>
+
+    <!-- Primary Brand Roles -->
+    <color name="colorPrimary">#C62828</color>
+    <color name="colorPrimaryContainer">#FCEEEE</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorOnPrimaryContainer">#410000</color>
+
+    <!-- Secondary Roles -->
+    <color name="colorSecondary">#8E0000</color>
+    <color name="colorSecondaryContainer">#FDE8E8</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+    <color name="colorOnSecondaryContainer">#410000</color>
+
+    <!-- Tertiary Roles -->
+    <color name="colorTertiary">#2563EB</color>
+    <color name="colorTertiaryContainer">#DBEAFE</color>
+    <color name="colorOnTertiary">#FFFFFF</color>
+    <color name="colorOnTertiaryContainer">#1E3A8A</color>
+
+    <!-- Error Colors (Accessible Red) -->
+    <color name="colorError">#DC2626</color>
+    <color name="colorErrorContainer">#FEE2E2</color>
+    <color name="colorOnError">#FFFFFF</color>
+    <color name="colorOnErrorContainer">#7F1D1D</color>
+
+    <!-- Success Colors (Accessible Green) -->
+    <color name="colorSuccess">#16A34A</color>
+    <color name="colorSuccessContainer">#DCFCE7</color>
+    <color name="colorOnSuccess">#FFFFFF</color>
+    <color name="colorOnSuccessContainer">#14532D</color>
+
+    <!-- Info Colors -->
+    <color name="colorInfo">#2563EB</color>
+    <color name="colorInfoContainer">#DBEAFE</color>
+    <color name="colorOnInfo">#FFFFFF</color>
+    <color name="colorOnInfoContainer">#1E3A8A</color>
+
+    <!-- Warning Colors (Accessible Amber) -->
+    <color name="colorWarning">#D97706</color>
+    <color name="colorWarningContainer">#FEF3C7</color>
+    <color name="colorOnWarning">#FFFFFF</color>
+    <color name="colorOnWarningContainer">#78350F</color>
+
+    <!-- AI Assistant Dedicated Card -->
+    <color name="colorAiAssistantBackground">#F5F3FF</color>
+    <color name="colorAiAssistantBorder">#DDD6FE</color>
+    <color name="colorAiAssistantText">#6D28D9</color>
+    <color name="colorAiChatBubble">#F1F5F9</color>
+    <color name="colorAiChatBubbleStroke">#E2E8F0</color>
+    <color name="colorAiChatText">#0F172A</color>
+
+    <!-- Buttons & Interactive Controls -->
+    <color name="colorButtonPrimaryBackground">#C62828</color>
+    <color name="colorButtonPrimaryText">#FFFFFF</color>
+    <color name="colorButtonSecondaryBackground">#F1F5F9</color>
+    <color name="colorButtonSecondaryText">#C62828</color>
+    <color name="colorButtonOutlineStroke">#C62828</color>
+
+    <!-- Input Form Fields -->
+    <color name="colorInputBackground">#FFFFFF</color>
+    <color name="colorInputBorder">#CBD5E1</color>
+    <color name="colorInputBorderFocused">#C62828</color>
+    <color name="colorInputBorderError">#DC2626</color>
+    <color name="colorInputText">#0F172A</color>
+    <color name="colorInputHint">#64748B</color>
+    <color name="colorInputError">#DC2626</color>
+
+    <!-- Status Badges (Color Blindness Friendly) -->
+    <color name="colorBadgeHigh">#DC2626</color>
+    <color name="colorBadgeMedium">#D97706</color>
+    <color name="colorBadgeLow">#16A34A</color>
+    <color name="colorBadgeInfo">#2563EB</color>
+    <color name="colorAlertIconBackground">#FEE2E2</color>
+
+    <!-- Borders & Dividers -->
+    <color name="colorOutline">#94A3B8</color>
+    <color name="colorOutlineVariant">#CBD5E1</color>
+    <color name="colorDivider">#E2E8F0</color>
+    <color name="colorDividerStrong">#CBD5E1</color>
+    <color name="colorScrim">#000000</color>
+    <color name="colorScannerOverlay">#80000000</color>
+
+    <!-- Base Constants -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

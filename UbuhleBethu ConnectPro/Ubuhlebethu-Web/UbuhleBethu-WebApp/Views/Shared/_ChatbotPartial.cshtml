@@ -1,0 +1,270 @@
+<div id="chatbot-wrapper">
+    <!-- Floating Action Button (Draggable / Repositionable) -->
+    <button type="button" id="chatbot-fab" class="btn shadow-lg"
+            title="AI Assistant (Drag to reposition, click to open)"
+            style="position: fixed; right: 24px; bottom: 24px; z-index: 9999; width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; background-color: var(--color-primary, #C5221F); border: none; border-radius: 50% !important; padding: 0; color: white; cursor: grab; user-select: none; touch-action: none; box-shadow: 0 4px 18px rgba(0,0,0,0.3); transition: transform 0.15s ease;"
+            onmouseover="if(!window.chatbotDragging) this.style.transform='scale(1.08)'"
+            onmouseout="if(!window.chatbotDragging) this.style.transform='scale(1)'">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px; pointer-events: none;">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+    </button>
+
+    <!-- Chat Card Modal (Always Pinned to Bottom-Right of Viewport) -->
+    <div id="chatbot-card" class="card shadow-lg"
+         style="width: 380px; max-width: calc(100vw - 32px); height: 520px; max-height: calc(100vh - 90px); border-radius: 14px; overflow: hidden; border: 1px solid #cbd5e1; position: fixed; bottom: 24px; right: 24px; display: none; flex-direction: column; background: #ffffff; z-index: 10001; box-shadow: 0 16px 48px rgba(0,0,0,0.28);">
+
+        <!-- Header -->
+        <div class="card-header text-white d-flex justify-content-between align-items-center"
+             style="background-color: var(--color-primary, #C5221F); border-bottom: none; padding: 12px 16px; user-select: none;">
+            <div style="font-weight: 600; display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>AI Assistant</span>
+            </div>
+            <button type="button"
+                    class="btn btn-sm text-white"
+                    style="background: none; border: none; font-size: 1.5rem; line-height: 1; padding: 0 4px; cursor: pointer; opacity: 0.9;"
+                    onclick="toggleChat()"
+                    title="Close chat">
+                &times;
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; flex: 1; overflow: hidden; background: #ffffff;">
+            <select id="chatProvider" class="form-select form-select-sm mb-2" style="font-size: 0.8rem; border-color: #cbd5e1;">
+                <option value="auto">Auto (Smart Failover)</option>
+                <option value="nvidia">Nvidia Nemotron 3</option>
+                <option value="groq">Groq Qwen 3.8</option>
+                <option value="gemini">Google Gemini 3.8</option>
+            </select>
+
+            <div id="chatlog" style="flex: 1; min-height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div class="text-start small">
+                    <span style="background-color:#ffffff; color:#333; padding:8px 12px; border-radius:12px 12px 12px 0; display:inline-block; max-width:90%; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        Hi! I'm the ConnectPro Assistant. Ask me how to do anything in the system, what your role can do, for a cost estimate, or about your projects, quotes and invoices.
+                    </span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <input id="chatInput" class="form-control form-control-sm" placeholder="Ask a question..." onkeypress="handleEnter(event)" style="font-size: 0.85rem;" />
+                <button type="button" class="btn btn-sm btn-primary" style="background-color: var(--color-primary, #C5221F); border-color: var(--color-primary, #C5221F);" onclick="sendChat()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/connectpro-chat.js" asp-append-version="true"></script>
+<script>
+    (function initChatbotRepositioning() {
+        const fab = document.getElementById('chatbot-fab');
+        const card = document.getElementById('chatbot-card');
+        if (!fab || !card) return;
+
+        let isDragging = false;
+        let dragMoved = false;
+        let startClientX = 0;
+        let startClientY = 0;
+        let initialLeft = 0;
+        let initialTop = 0;
+        window.chatbotDragging = false;
+
+        // Restore saved position if available
+        try {
+            const saved = localStorage.getItem('connectpro_chat_fab_pos');
+            if (saved) {
+                const pos = JSON.parse(saved);
+                if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
+                    const clampedLeft = Math.max(8, Math.min(window.innerWidth - 66, pos.left));
+                    const clampedTop = Math.max(8, Math.min(window.innerHeight - 66, pos.top));
+                    fab.style.left = clampedLeft + 'px';
+                    fab.style.top = clampedTop + 'px';
+                    fab.style.right = 'auto';
+                    fab.style.bottom = 'auto';
+                }
+            }
+        } catch (_) {}
+
+        fab.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0 && e.pointerType === 'mouse') return;
+            isDragging = true;
+            dragMoved = false;
+            window.chatbotDragging = false;
+            startClientX = e.clientX;
+            startClientY = e.clientY;
+
+            const rect = fab.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            try { fab.setPointerCapture(e.pointerId); } catch (_) {}
+            fab.style.cursor = 'grabbing';
+        });
+
+        fab.addEventListener('pointermove', function (e) {
+            if (!isDragging) return;
+            const dx = e.clientX - startClientX;
+            const dy = e.clientY - startClientY;
+
+            if (Math.hypot(dx, dy) > 5) {
+                dragMoved = true;
+                window.chatbotDragging = true;
+            }
+
+            if (dragMoved) {
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+
+                const maxLeft = Math.max(8, window.innerWidth - fab.offsetWidth - 8);
+                const maxTop = Math.max(8, window.innerHeight - fab.offsetHeight - 8);
+
+                newLeft = Math.max(8, Math.min(maxLeft, newLeft));
+                newTop = Math.max(8, Math.min(maxTop, newTop));
+
+                fab.style.left = newLeft + 'px';
+                fab.style.top = newTop + 'px';
+                fab.style.right = 'auto';
+                fab.style.bottom = 'auto';
+            }
+        });
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            fab.style.cursor = 'grab';
+
+            try { fab.releasePointerCapture(e.pointerId); } catch (_) {}
+
+            if (dragMoved) {
+                // Save user position
+                try {
+                    const rect = fab.getBoundingClientRect();
+                    localStorage.setItem('connectpro_chat_fab_pos', JSON.stringify({
+                        left: rect.left,
+                        top: rect.top
+                    }));
+                } catch (_) {}
+                // Keep window.chatbotDragging true briefly to ignore any trailing click
+                setTimeout(() => { window.chatbotDragging = false; }, 80);
+            } else {
+                window.chatbotDragging = false;
+                toggleChat();
+            }
+        }
+
+        fab.addEventListener('pointerup', endDrag);
+        fab.addEventListener('pointercancel', endDrag);
+
+        // Close chat on ESC key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && card.style.display === 'flex') {
+                toggleChat();
+            }
+        });
+
+        // Window resize reposition clamp
+        window.addEventListener('resize', function () {
+            if (fab.style.left && fab.style.left !== 'auto') {
+                const currentLeft = parseFloat(fab.style.left);
+                const currentTop = parseFloat(fab.style.top);
+                const maxLeft = Math.max(8, window.innerWidth - fab.offsetWidth - 8);
+                const maxTop = Math.max(8, window.innerHeight - fab.offsetHeight - 8);
+                fab.style.left = Math.max(8, Math.min(maxLeft, currentLeft)) + 'px';
+                fab.style.top = Math.max(8, Math.min(maxTop, currentTop)) + 'px';
+            }
+        });
+    })();
+
+    function toggleChat() {
+        var fab = document.getElementById('chatbot-fab');
+        var card = document.getElementById('chatbot-card');
+
+        // Opening chat: always pin to bottom-right (right: 24px, bottom: 24px)
+        if (card.style.display === 'none' || card.style.display === '') {
+            card.style.display = 'flex';
+            fab.style.display = 'none';
+            setTimeout(() => {
+                var input = document.getElementById('chatInput');
+                if (input) input.focus();
+            }, 100);
+        } else {
+            card.style.display = 'none';
+            fab.style.display = 'flex';
+        }
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') sendChat();
+    }
+
+    var __chat = ConnectProChat.Conversation('widget');
+    var __bubbleBot = 'background-color:#ffffff; color:#333; padding:8px 12px; border-radius:12px 12px 12px 0; display:inline-block; max-width:92%; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); text-align:left; word-break:break-word;';
+    var __bubbleUser = 'background-color:var(--color-primary, #C5221F); color:white; padding:6px 12px; border-radius:12px 12px 0 12px; display:inline-block; max-width:85%; text-align:left; white-space:pre-wrap; word-break:break-word;';
+
+    function __addBubble(role, html, extra) {
+        var log = document.getElementById('chatlog');
+        var row = document.createElement('div');
+        row.className = (role === 'user' ? 'text-end' : 'text-start') + ' small';
+        var span = document.createElement('span');
+        span.setAttribute('style', role === 'user' ? __bubbleUser : __bubbleBot);
+        span.innerHTML = html;
+        row.appendChild(span);
+        if (extra) row.appendChild(extra);
+        log.appendChild(row);
+        log.scrollTop = log.scrollHeight;
+        return row;
+    }
+
+    // Restore the conversation after page navigation
+    (function restoreChat() {
+        __chat.messages().forEach(function (m) {
+            __addBubble(m.role, m.role === 'user' ? ConnectProChat.escape(m.content) : ConnectProChat.renderMarkdown(m.content));
+        });
+    })();
+
+    function newChat() {
+        __chat.clear();
+        var log = document.getElementById('chatlog');
+        while (log.children.length > 1) log.removeChild(log.lastChild);
+    }
+
+    var __busy = false;
+    async function sendChat() {
+        var input = document.getElementById('chatInput');
+        var provider = document.getElementById('chatProvider').value;
+        var question = input.value.trim();
+        if (!question || __busy) return;
+
+        __busy = true;
+        input.value = '';
+        __addBubble('user', ConnectProChat.escape(question));
+        var typing = __addBubble('assistant', '<span class="text-muted">Thinking&hellip;</span>');
+
+        try {
+            var r = await __chat.send(question, provider);
+            typing.remove();
+            var note = null;
+            if (r.fallback) {
+                note = document.createElement('div');
+                note.className = 'text-muted';
+                note.style.cssText = 'font-size:0.68em;margin-top:2px;';
+                note.textContent = 'AI providers are busy - answered from built-in system knowledge.';
+            }
+            __addBubble('assistant', ConnectProChat.renderMarkdown(r.answer), note);
+        } catch (e) {
+            typing.remove();
+            __addBubble('assistant', '<span class="text-danger">I couldn\'t reach the assistant just now. Please try again in a moment.</span>');
+        } finally {
+            __busy = false;
+            input.focus();
+        }
+    }
+</script>

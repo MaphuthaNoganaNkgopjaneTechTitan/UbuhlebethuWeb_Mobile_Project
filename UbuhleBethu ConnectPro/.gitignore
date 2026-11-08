@@ -1,0 +1,30 @@
+# .NET build outputs
+[Bb]in/
+[Oo]bj/
+*.dll
+*.pdb
+*.exe
+*.cache
+*.Up2Date
+logs/
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# Android
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+
+# OS
+.DS_Store
+Thumbs.db
+# Secrets
+appsettings.Local.json
+.env
+*.keystore
+App_Data/

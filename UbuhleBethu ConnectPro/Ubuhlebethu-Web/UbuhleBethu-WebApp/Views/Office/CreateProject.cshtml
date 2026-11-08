@@ -1,0 +1,20 @@
+@{ ViewData["Title"] = "Project Created"; }
+
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+    <div style="text-align: center; max-width: 500px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 24px;">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        
+        <h1 style="color: #333; margin-bottom: 16px;">Project Successfully Created</h1>
+        <p style="color: #666; font-size: 1.1rem; line-height: 1.5; margin-bottom: 32px;">
+            The approved quotation has been converted into an active project and added to the system.
+        </p>
+        
+        <div style="display: flex; gap: 16px; justify-content: center;">
+            <a href="/Office/PendingQuotes" class="btn btn-secondary">Back to Pending Quotes</a>
+            <a href="/Dashboard/Index" class="btn btn-primary">View Active Projects</a>
+        </div>
+    </div>
+</div>

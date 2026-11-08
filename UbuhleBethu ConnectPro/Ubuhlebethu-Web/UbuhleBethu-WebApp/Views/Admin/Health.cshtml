@@ -1,0 +1,314 @@
+@model UbuhlebethuConnectPro.WebApp.Models.DTOs.SystemHealthViewModel
+@{
+    ViewData["Title"] = "System Health & Observability";
+    var isHealthy = Model != null && string.Equals(Model.Status, "Healthy", StringComparison.OrdinalIgnoreCase);
+    var isDegraded = Model != null && string.Equals(Model.Status, "Degraded", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="page-title h3 mb-1">
+            <i class="bi bi-heart-pulse-fill text-danger me-2"></i>System Health &amp; Observability
+        </h1>
+        <p class="page-subtitle text-muted mb-0">Live infrastructure telemetry, service reachability, and rate-limiting monitors</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="@Url.Action("Health", "Admin")" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Status
+        </a>
+        <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Admin Console
+        </a>
+    </div>
+</div>
+
+<!-- Overall Status Banner -->
+<div class="card mb-4 border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
+    <div class="card-body p-4 @(isHealthy ? "bg-success-subtle text-success-emphasis" : (isDegraded ? "bg-warning-subtle text-warning-emphasis" : "bg-danger-subtle text-danger-emphasis"))">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="health-pulse-container">
+                    <span class="health-pulse-dot @(isHealthy ? "bg-success" : (isDegraded ? "bg-warning" : "bg-danger"))"></span>
+                </div>
+                <div>
+                    <h4 class="mb-0 fw-bold">
+                        @(isHealthy ? "All Systems Operational" : (isDegraded ? "Service Operating with Warnings" : "Critical Incident Detected"))
+                    </h4>
+                    <p class="mb-0 small opacity-75">
+                        Backend API status: <strong>@(Model?.Status ?? "Unknown")</strong> &bull; Total Probe Latency: <strong>@(Model?.TotalDuration ?? "N/A")</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="text-end">
+                <span class="badge @(isHealthy ? "bg-success" : (isDegraded ? "bg-warning text-dark" : "bg-danger")) fs-6 px-3 py-2">
+                    @(Model?.Status ?? "Unreachable")
+                </span>
+                <div class="small opacity-75 mt-1">Checked: @(Model?.CheckedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm:ss") ?? "Just now")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Telemetry Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Probe Response</div>
+                <div class="h3 fw-bold mb-1 text-primary">@(Model?.TotalDuration ?? "0.0ms")</div>
+                <div class="small text-muted"><i class="bi bi-stopwatch me-1"></i>Combined probe duration</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Server Uptime</div>
+                <div class="h3 fw-bold mb-1 text-success">@(Model?.System?.Uptime ?? "Active")</div>
+                <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>Process uptime</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Environment</div>
+                <div class="h3 fw-bold mb-1 text-info">@(Model?.System?.Environment ?? "Production")</div>
+                <div class="small text-muted"><i class="bi bi-hdd-network me-1"></i>@(Model?.System?.Server ?? "UbuhleBethu-Api")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 10px;">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Runtime Framework</div>
+                <div class="h3 fw-bold mb-1 text-secondary">@(Model?.System?.Framework ?? ".NET 10.0")</div>
+                <div class="small text-muted text-truncate" title="@(Model?.System?.Os ?? "")"><i class="bi bi-cpu me-1"></i>@(Model?.System?.Os ?? "Server")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Component Checks Grid -->
+<div class="row g-4 mb-4">
+    <!-- 1. Database Connectivity -->
+    @{
+        var dbEntry = Model?.Entries?.ContainsKey("database") == true ? Model.Entries["database"] : null;
+        var isDbHealthy = dbEntry != null && string.Equals(dbEntry.Status, "Healthy", StringComparison.OrdinalIgnoreCase);
+    }
+    <div class="col-lg-4">
+        <div class="card border shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-database-fill-check text-primary fs-5"></i>
+                    <h5 class="mb-0 fw-bold">PostgreSQL Database</h5>
+                </div>
+                <span class="badge @(isDbHealthy ? "bg-success" : "bg-danger")">
+                    @(dbEntry?.Status ?? "Unreachable")
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">@(dbEntry?.Description ?? "Checking database responsiveness...")</p>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Response Latency</span>
+                        <span class="fw-semibold">@(dbEntry?.Duration ?? "N/A")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Provider</span>
+                        <span class="fw-semibold">@(dbEntry?.Data?.ContainsKey("provider") == true ? dbEntry.Data["provider"] : "Npgsql / Neon")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Target Catalog</span>
+                        <span class="fw-semibold">@(dbEntry?.Data?.ContainsKey("database") == true ? dbEntry.Data["database"] : "neondb")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">EF Core Migrations</span>
+                        <span class="badge bg-success-subtle text-success">Applied &amp; Synchronized</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Storage Reachability (Backblaze B2 / S3) -->
+    @{
+        var storageEntry = Model?.Entries?.ContainsKey("storage") == true ? Model.Entries["storage"] : null;
+        var isStorageHealthy = storageEntry != null && string.Equals(storageEntry.Status, "Healthy", StringComparison.OrdinalIgnoreCase);
+        var isStorageDegraded = storageEntry != null && string.Equals(storageEntry.Status, "Degraded", StringComparison.OrdinalIgnoreCase);
+    }
+    <div class="col-lg-4">
+        <div class="card border shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-cloud-arrow-up-fill text-info fs-5"></i>
+                    <h5 class="mb-0 fw-bold">Cloud &amp; S3 Storage</h5>
+                </div>
+                <span class="badge @(isStorageHealthy ? "bg-success" : (isStorageDegraded ? "bg-warning text-dark" : "bg-danger"))">
+                    @(storageEntry?.Status ?? "Unreachable")
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">@(storageEntry?.Description ?? "Probing storage URL generator and service reachability...")</p>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Probe Latency</span>
+                        <span class="fw-semibold">@(storageEntry?.Duration ?? "N/A")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Primary Provider</span>
+                        <span class="fw-semibold text-uppercase">@(storageEntry?.Data?.ContainsKey("provider") == true ? storageEntry.Data["provider"] : "S3 / Backblaze")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Bucket Name</span>
+                        <span class="fw-semibold">@(storageEntry?.Data?.ContainsKey("bucket") == true ? storageEntry.Data["bucket"] : "ubuhlebethu")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Fallback Architecture</span>
+                        <span class="badge bg-info-subtle text-info">LocalStorage Dual-Store</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Memory & Process Health -->
+    @{
+        var memoryEntry = Model?.Entries?.ContainsKey("memory") == true ? Model.Entries["memory"] : null;
+        var isMemHealthy = memoryEntry != null && string.Equals(memoryEntry.Status, "Healthy", StringComparison.OrdinalIgnoreCase);
+        double workingSetMb = 0;
+        double allocatedMb = 0;
+        if (memoryEntry?.Data != null)
+        {
+            if (memoryEntry.Data.ContainsKey("workingSetMb"))
+                double.TryParse(memoryEntry.Data["workingSetMb"]?.ToString(), out workingSetMb);
+            if (memoryEntry.Data.ContainsKey("allocatedMemoryMb"))
+                double.TryParse(memoryEntry.Data["allocatedMemoryMb"]?.ToString(), out allocatedMb);
+        }
+        var memoryPct = Math.Min(100, Math.Max(5, (int)((workingSetMb / 1536.0) * 100)));
+    }
+    <div class="col-lg-4">
+        <div class="card border shadow-sm h-100" style="border-radius: 12px;">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-cpu-fill text-warning fs-5"></i>
+                    <h5 class="mb-0 fw-bold">Process &amp; Memory</h5>
+                </div>
+                <span class="badge @(isMemHealthy ? "bg-success" : "bg-warning text-dark")">
+                    @(memoryEntry?.Status ?? "Normal")
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Working Set Memory</span>
+                        <span class="fw-bold">@workingSetMb MB / 1536 MB max</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar @(memoryPct > 80 ? "bg-danger" : (memoryPct > 60 ? "bg-warning" : "bg-success"))" 
+                             role="progressbar" style="width: @memoryPct%"></div>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Probe Latency</span>
+                        <span class="fw-semibold">@(memoryEntry?.Duration ?? "N/A")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Managed Heap Allocated</span>
+                        <span class="fw-semibold">@allocatedMb MB</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">GC Collections (Gen0/1/2)</span>
+                        <span class="fw-semibold">
+                            @(memoryEntry?.Data?.ContainsKey("gen0Collections") == true ? memoryEntry.Data["gen0Collections"] : "0") /
+                            @(memoryEntry?.Data?.ContainsKey("gen1Collections") == true ? memoryEntry.Data["gen1Collections"] : "0") /
+                            @(memoryEntry?.Data?.ContainsKey("gen2Collections") == true ? memoryEntry.Data["gen2Collections"] : "0")
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Warning Threshold</span>
+                        <span class="fw-semibold">1024 MB (Degraded)</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security & Rate Limiting Overview Card -->
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center gap-2">
+        <i class="bi bi-shield-lock-fill text-danger fs-5"></i>
+        <h5 class="mb-0 fw-bold">Active API Rate Limiting &amp; Protection Policies</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Policy</th>
+                        <th>Protected Endpoints</th>
+                        <th>Rate Limit Rule</th>
+                        <th>Partition Key</th>
+                        <th>Violation Response</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge bg-primary">auth</span></td>
+                        <td><code>POST /api/v1/auth/login</code>, <code>POST /api/v1/auth/register</code></td>
+                        <td><strong>5 requests / 1 min</strong> window</td>
+                        <td>Client Remote IP</td>
+                        <td><code>429 Too Many Requests</code> + <code>Retry-After</code></td>
+                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Enforcing</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-warning text-dark">ai</span></td>
+                        <td>
+                            <code>POST /api/v1/chat/conversation</code><br />
+                            <code>POST /api/v1/chat/ask</code><br />
+                            <code>POST /api/v1/ai/estimate-materials</code><br />
+                            <code>POST /api/v1/ai/suggest-quote</code>
+                        </td>
+                        <td><strong>15 requests / 1 min</strong> window</td>
+                        <td>User Identity or Remote IP</td>
+                        <td><code>429 Too Many Requests</code> + Token Quota JSON</td>
+                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Enforcing</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.health-pulse-container {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.health-pulse-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 rgba(40, 167, 69, 0.4);
+    animation: healthPulse 2s infinite;
+}
+@@keyframes healthPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+</style>

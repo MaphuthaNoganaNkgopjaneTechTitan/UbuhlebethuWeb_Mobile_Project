@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Office / QS Dashboard";
+}
+
+<div class="page-header mb-4">
+    <div>
+        <h1 class="page-title">Office &amp; Quantity Surveying Hub</h1>
+        <p class="page-subtitle">Manage client quotations, prepare bills of quantities, and track active project progress</p>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border p-4">
+            <h4 style="color:var(--color-primary, #C5221F); font-weight:700;">Pending Quotes</h4>
+            <p class="text-muted small">Review incoming quote submissions from clients, calculate estimates, and send to Management for approval.</p>
+            <a asp-action="PendingQuotes" class="btn btn-primary btn-sm mt-2">View Pending Quotes &rsaquo;</a>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm border p-4">
+            <h4 style="color:var(--color-primary, #C5221F); font-weight:700;">Jobs In Progress</h4>
+            <p class="text-muted small">Monitor ongoing construction site schedules, milestones, daily logs, and purchase orders.</p>
+            <a asp-action="Index" class="btn btn-secondary btn-sm mt-2">Open Primary Dashboard &rsaquo;</a>
+        </div>
+    </div>
+</div>

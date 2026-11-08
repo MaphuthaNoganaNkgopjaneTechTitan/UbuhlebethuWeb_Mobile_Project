@@ -1,0 +1,80 @@
+@model UbuhlebethuConnectPro.WebApp.Models.DTOs.RegisterViewModel
+@{
+    ViewData["Title"] = "Create your account";
+    Layout = null; // Full-screen, same look as the sign-in page
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create your account — Ubuhlebethu ConnectPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/images/logo.png" />
+</head>
+<body class="login-page">
+<div class="login-shell">
+
+    <div class="login-brand">
+        <div class="login-brand-logo">
+            <div class="login-brand-mark" style="background: transparent;">
+                <img src="~/images/logo.png" alt="Ubuhlebethu Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+            </div>
+            <div class="login-brand-name">Ubuhlebethu<small>ConnectPro</small></div>
+        </div>
+        <div class="login-tagline">Your<br/>project,<br/><em>your portal</em></div>
+        <p class="login-desc">
+            Create a client account with your personal email address to submit business proposals,
+            follow your quotations and invoices, and track your projects.
+        </p>
+        <div style="margin-top:auto; padding-top:40px; position:relative;">
+            <div style="font-size:0.65rem; color:rgba(255,255,255,0.3); letter-spacing:0.04em;">
+                UBUHLEBETHU BUSINESS ENTERPRISE CC
+            </div>
+        </div>
+    </div>
+
+    <div class="login-form-panel">
+        <div class="login-form-inner">
+            <div class="login-form-title">Create your account</div>
+            <div class="login-form-sub">Clients sign in with their personal email address</div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="login-error" role="alert">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <div>@error.ErrorMessage</div>
+                    }
+                </div>
+            }
+
+            <form method="post" asp-controller="Account" asp-action="Register" novalidate>
+                <div class="form-group">
+                    <label for="Email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="Email" name="Email" value="@Model.Email"
+                           placeholder="you@example.com" autocomplete="email" required autofocus />
+                </div>
+                <div class="form-group">
+                    <label for="Password" class="form-label">Password (at least 8 characters, with upper and lower case and a number)</label>
+                    <input type="password" class="form-control" id="Password" name="Password"
+                           autocomplete="new-password" minlength="8" required />
+                </div>
+                <div class="form-group">
+                    <label for="ConfirmPassword" class="form-label">Confirm password</label>
+                    <input type="password" class="form-control" id="ConfirmPassword" name="ConfirmPassword"
+                           autocomplete="new-password" minlength="8" required />
+                </div>
+                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px; padding:10px;">Create account</button>
+            </form>
+
+            <p style="margin-top:14px;font-size:.85rem">Already registered? <a asp-controller="Account" asp-action="Login"><strong>Sign in</strong></a></p>
+            <p style="margin-top:6px;font-size:.85rem"><a href="/">&larr; Back to the Ubuhlebethu website</a></p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

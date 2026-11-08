@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/logs/
+**/App_Data/
+**/appsettings.Local.json
+.env
+Ubuhlebethu-Mobile/
+.git

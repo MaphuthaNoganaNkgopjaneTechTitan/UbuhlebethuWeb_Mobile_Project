@@ -1,0 +1,77 @@
+# NOTE: GitHub only runs workflows from the repository root. This file assumes the repository root is
+# the folder that contains Ubuhlebethu-Web, Ubuhlebethu-Mobile and the Dockerfiles (this folder).
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  web:
+    name: Web and API (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore Ubuhlebethu-Web/UbuhlebethuConnectPro.slnx
+      - run: dotnet build Ubuhlebethu-Web/UbuhlebethuConnectPro.slnx --no-restore -c Release
+      - name: Test
+        run: dotnet test Ubuhlebethu-Web/UbuhlebethuConnectPro.slnx --no-build -c Release --logger trx --collect:"XPlat Code Coverage"
+        env:
+          Jwt__Key: ci-only-test-key-0123456789-0123456789-abcdef
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: "**/TestResults/**"
+
+  android:
+    name: Android (build + unit tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Ubuhlebethu-Mobile/UbuhlebethuMApp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew assembleDebug
+      - run: ./gradlew testDebugUnitTest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubuhlebethu-debug-apk
+          path: Ubuhlebethu-Mobile/UbuhlebethuMApp/app/build/outputs/apk/debug/*.apk
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    needs: web
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t ubuhlebethu-webapp -f Dockerfile.WebApp .
+      - run: docker build -t ubuhlebethu-api -f Dockerfile.Api .
+
+  deploy:
+    name: Deploy (main only)
+    runs-on: ubuntu-latest
+    needs: [web, docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Trigger API deploy
+        env:
+          HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$HOOK" ]; then curl -fsS -X POST "$HOOK"; else echo "RENDER_API_DEPLOY_HOOK not set - skipping"; fi
+      - name: Trigger Web deploy
+        env:
+          HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$HOOK" ]; then curl -fsS -X POST "$HOOK"; else echo "RENDER_WEB_DEPLOY_HOOK not set - skipping"; fi

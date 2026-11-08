@@ -1,0 +1,98 @@
+@model IEnumerable<UbuhlebethuConnectPro.WebApp.ApiClient.QuoteDto>
+@{
+    ViewData["Title"] = "Pending Quotes";
+}
+
+<!-- Back nav button -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+            <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Back to Dashboard
+    </a>
+    <div style="font-size:0.78rem; color:var(--text-muted);">
+        Office &rsaquo; <strong style="color:var(--text-primary);">Pending Quotes</strong>
+    </div>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Pending Quotation Requests</h1>
+        <p class="page-subtitle">Review and action incoming client quotation requests</p>
+    </div>
+</div>
+
+<div class="data-table-wrap">
+    <div class="data-table-header">
+        <p class="data-table-title">Awaiting Review</p>
+        <div class="table-controls">
+            <div class="table-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" placeholder="Search..." />
+            </div>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Client</th>
+                        <th>Date Submitted</th>
+                        <th>Project Type</th>
+                        <th>Status</th>
+                        <th>Estimate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var q in Model)
+                    {
+                        string statusBadge = q.Status switch
+                        {
+                            "Approved" => "badge-success",
+                            "Paid" => "badge-success",
+                            "Invoiced" => "badge-primary",
+                            "ManagerApproved" => "badge-info",
+                            "Reviewed" => "badge-info",
+                            "Under Review" => "badge-warning",
+                            "Submitted" => "badge-submitted",
+                            "Rejected" => "badge-danger",
+                            _ => "badge-neutral"
+                        };
+                        <tr>
+                            <td class="td-primary">@q.Reference</td>
+                            <td>@q.ClientName</td>
+                            <td>@q.RequestDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>@q.ProjectType</td>
+                            <td><span class="badge @statusBadge">@q.Status</span></td>
+                            <td>R @q.EstimatedBudget.ToString("N0")</td>
+                            <td>
+                                <a asp-controller="Quotation" asp-action="Details" asp-route-id="@q.Id"
+                                   class="btn btn-secondary btn-sm">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div style="padding:48px 20px; text-align:center; color:var(--text-muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:12px; opacity:0.4;">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <div style="font-size:0.9rem; font-weight:600; color:var(--text-secondary); margin-bottom:4px;">No pending quotes</div>
+            <div style="font-size:0.8rem;">All quotation requests have been reviewed and actioned.</div>
+        </div>
+    }
+</div>

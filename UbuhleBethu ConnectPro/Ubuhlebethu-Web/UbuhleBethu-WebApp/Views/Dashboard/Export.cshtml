@@ -1,0 +1,88 @@
+@model List<UbuhlebethuConnectPro.Core.Models.Job>
+@{
+    ViewData["Title"] = "Data Export";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Data Export</h1>
+        <p class="page-subtitle">Download system records as a CSV file you can open in Excel.</p>
+    </div>
+</div>
+
+<div class="data-table-wrap" style="max-width: 800px; margin: 0 auto; padding: 24px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <!-- Left Col: Form -->
+        <div>
+            <h4 style="margin-top: 0; color: var(--text-main); font-weight: 600; margin-bottom: 16px;">Export Criteria</h4>
+            
+            <form method="get" asp-controller="Dashboard" asp-action="DownloadCsv">
+                <div class="mb-3">
+                    <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">Module</label>
+                    <select name="module" class="form-select">
+                        <option value="Quotations & Estimates">Quotations & Estimates</option>
+                        <option value="Projects & Operations">Projects & Operations</option>
+                        <option value="Invoices & Payments">Invoices & Payments</option>
+                        <option value="User Audit Logs">User Audit Logs</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">Date Range</label>
+                    <div style="display: flex; gap: 12px;">
+                        <input type="date" name="from" class="form-control" value="2023-01-01" aria-label="From date" />
+                        <input type="date" name="to" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" aria-label="To date" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">Format</label>
+                    <select name="format" class="form-select">
+                        <option value="csv">CSV (Comma Separated)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px; display: inline-block; vertical-align: text-bottom;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download CSV
+                </button>
+            </form>
+        </div>
+
+        <!-- Right Col: Actual Data Summary -->
+        <div>
+            <h4 style="margin-top: 0; color: var(--text-main); font-weight: 600; margin-bottom: 16px;">Available Data Summary</h4>
+            
+            <div style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                @if (Model != null && Model.Count > 0)
+                {
+                    foreach (var job in Model.Take(5))
+                    {
+                        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #faf8f8;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">@job.JobNumber - @job.ClientName</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Status: @job.Status | Cost: @job.EstimatedCost.ToString("C")</div>
+                            </div>
+                        </div>
+                    }
+                    if (Model.Count > 5)
+                    {
+                        <div style="padding: 12px 16px; text-align: center; background: #faf8f8; font-size: 0.85rem; color: var(--text-muted);">
+                            And @(Model.Count - 5) more records...
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div style="padding: 12px 16px; text-align: center; background: #faf8f8; font-size: 0.85rem; color: var(--text-muted);">
+                        No data available to export.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

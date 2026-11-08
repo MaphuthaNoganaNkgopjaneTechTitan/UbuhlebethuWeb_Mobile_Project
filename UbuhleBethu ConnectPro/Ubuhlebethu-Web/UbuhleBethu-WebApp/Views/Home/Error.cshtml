@@ -1,0 +1,8 @@
+@model UbuhlebethuConnectPro.Core.Models.ErrorViewModel
+@{ ViewData["Title"] = "Something went wrong"; Layout = "_PublicLayout"; }
+<div class="container receipt">
+    <h1 style="font-family:var(--font-head)">Something went wrong</h1>
+    <p>Sorry – that didn't work. Please go back and try again. If it keeps happening, call us on <a href="tel:0118877240">011 887 7240</a>.</p>
+    @if (Model.ShowRequestId) { <p style="color:var(--muted);font-size:.85rem">Reference for support: <code>@Model.RequestId</code></p> }
+    <a class="btn" href="/">Back to the home page</a>
+</div>

@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "New Support Ticket";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">New Support Ticket</h1>
+        <p class="page-subtitle">Tell the support team what you need help with. Your ticket will be routed to the appropriate stakeholder.</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:720px;">
+    <div class="card-body">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <label class="form-label" for="category">Inquiry Department / Category</label>
+            <select id="category" name="category" class="form-select" style="margin-bottom:14px;">
+                <option value="Site Operations">Site Operations &amp; Demolition (Project Manager)</option>
+                <option value="Billing &amp; Invoices">Billing, Payments &amp; Invoices (Office / QS)</option>
+                <option value="Quotation Inquiry">Quotation Scope &amp; Estimates (Office / QS)</option>
+                <option value="Technical / System">Account Access &amp; System Issues (System Admin)</option>
+            </select>
+
+            <label class="form-label" for="subject">Subject</label>
+            <input id="subject" name="subject" class="form-control" maxlength="160" placeholder="e.g. Demolition schedule update" required />
+
+            <label class="form-label mt-3" for="description">Description</label>
+            <textarea id="description" name="description" class="form-control" rows="7" maxlength="4000" placeholder="Provide full details regarding your site, billing, or account request..." required></textarea>
+
+            <div class="mt-3">
+                <button class="btn btn-primary" type="submit">Submit ticket</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

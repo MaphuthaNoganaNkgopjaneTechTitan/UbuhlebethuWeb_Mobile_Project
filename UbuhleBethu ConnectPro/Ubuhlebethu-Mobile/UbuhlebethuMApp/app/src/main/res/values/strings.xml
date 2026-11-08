@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">UbuhlebethuMApp</string>
+        <string name="logout">LOG OUT</string>
+        <string name="capture_expense_title">💰 Capture Site Cost / Expense</string>
+        <string name="pick_date">📅 Pick Date</string>
+        <string name="select_worker">Select Assigned Worker:</string>
+        <string name="assign_task_btn">➕ Assign Task to Worker</string>
+        <string name="upload_photo">📌 Tag GPS &amp; Upload Progress Photo</string>
+        <string name="submit_report_btn">🔄 Submit Site Report</string>
+        <string name="worker_attendance">Worker Attendance</string>
+        <string name="selected_date_today">Selected Date: Today</string>
+        <string name="task_description_hint">Task Description / Work Assignment</string>
+        <string name="save_btn">➕ Save</string>
+        <string name="gemini_assistant_title">✨ Gemini AI Site Assistant</string>
+        <string name="ubuhlebethu_logo">Ubuhlebethu Logo</string>
+        <string name="assign_task_section">📋 Assign Task to Field Worker</string>
+        <string name="gemini_greeting">Hello Site Manager! I can help you estimate costs for the materials.</string>
+        <string name="progress_hint">Progress % (0-100)</string>
+        <string name="amount_zar">Amount (ZAR R)</string>
+        <string name="captured_costs_title">Captured Site Costs &amp; Approvals</string>
+        <string name="description_hint">Description</string>
+        <string name="submit_report_section">✅ Submit Site Report</string>
+        <string name="ask_gemini_btn">Ask Gemini for Cost Estimate</string>
+        <string name="cost_item_hint">Cost Item / Description</string>
+        <string name="active_sites_title">ACTIVE SITES</string>
+        <string name="assigned_tasks_status">Assigned Work Tasks Status:</string>
+        <string name="site_manager_title">👷‍♂️ Site Manager</string>
+
+</resources>

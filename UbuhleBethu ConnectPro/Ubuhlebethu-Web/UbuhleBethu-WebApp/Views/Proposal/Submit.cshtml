@@ -1,0 +1,142 @@
+@using UbuhlebethuConnectPro.WebApp.Models.Portfolio
+@model UbuhlebethuConnectPro.WebApp.Models.Forms.ProposalForm
+@{
+    ViewData["Title"] = "Submit a proposal";
+    Layout = "_PublicLayout";
+    var project = ViewData["Project"] as PortfolioProject;
+    string Invalid(string key) => ViewData.ModelState[key]?.Errors.Count > 0 ? "invalid" : "";
+}
+
+<div class="page-hero">
+    <div class="container">
+        <p class="crumbs"><a href="/">Home</a> / <a href="/#projects">Completed projects</a> / Submit a proposal</p>
+        <h1>Submit your proposal</h1>
+        <p>Tell us who you are and attach your business proposal. Takes about two minutes – no account needed.</p>
+    </div>
+</div>
+
+<div class="container form-wrap">
+    <aside class="summary" aria-label="Selected project">
+        @if (project != null)
+        {
+            <img src="@project.ImageUrl" alt="@project.Name" width="800" height="600" />
+            <div class="body">
+                <span class="kicker">Your reference project</span>
+                <h2>@project.Name</h2>
+                @if (!string.IsNullOrEmpty(project.Institution)) { <p class="inst">Client: @project.Institution</p> }
+                @if (project.HasContractDetails) { <p class="inst">@project.Period · @project.ContractSum</p> }
+                <p style="margin:.6rem 0 0;font-size:.85rem"><a href="/#projects">Choose a different project</a></p>
+            </div>
+        }
+        else
+        {
+            <div class="body">
+                <span class="kicker">General proposal</span>
+                <h2>No reference project selected</h2>
+                <p class="inst">You can submit without one, or <a href="/#projects">pick a completed project</a> that is close to what you need.</p>
+            </div>
+        }
+    </aside>
+
+    <div class="panel">
+        <h2>Your details &amp; proposal</h2>
+        <p class="sub">Fields marked <span class="req" style="color:var(--brand)">*</span> are required.</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert error" role="alert" tabindex="-1" id="formErrors">
+                <strong>Please fix the following:</strong>
+                <div asp-validation-summary="All" class="err" style="margin-top:.3rem"></div>
+            </div>
+        }
+
+        <form id="proposalForm" method="post" asp-controller="Proposal" asp-action="Submit" enctype="multipart/form-data" novalidate>
+            <input type="hidden" asp-for="ProjectSlug" />
+            <div class="hp" aria-hidden="true">
+                <label for="Website">Leave this field empty</label>
+                <input type="text" id="Website" name="Website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <fieldset>
+                <legend>1 · About you</legend>
+                <div class="field">
+                    <label asp-for="FullName">Full name <span class="req">*</span></label>
+                    <input asp-for="FullName" class="input @Invalid("FullName")" autocomplete="name" required />
+                    <span asp-validation-for="FullName" class="err"></span>
+                </div>
+                <div class="row2">
+                    <div class="field">
+                        <label asp-for="Email">Email address <span class="req">*</span></label>
+                        <input asp-for="Email" type="email" class="input @Invalid("Email")" autocomplete="email" required />
+                        <span asp-validation-for="Email" class="err"></span>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Phone">Phone number <span class="req">*</span></label>
+                        <input asp-for="Phone" type="tel" class="input @Invalid("Phone")" autocomplete="tel" required />
+                        <span asp-validation-for="Phone" class="err"></span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label asp-for="Company">Company / organisation</label>
+                    <input asp-for="Company" class="input" autocomplete="organization" />
+                    <span class="hint">Optional</span>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>2 · About the project</legend>
+                <div class="row2">
+                    <div class="field">
+                        <label asp-for="ProjectType">Project type <span class="req">*</span></label>
+                        <select asp-for="ProjectType" class="select @Invalid("ProjectType")" required>
+                            <option value="">Select…</option>
+                            @foreach (var t in PortfolioCatalog.ProjectTypes)
+                            {
+                                <option value="@t" selected="@(t == Model.ProjectType)">@t</option>
+                            }
+                        </select>
+                        <span asp-validation-for="ProjectType" class="err"></span>
+                    </div>
+                    <div class="field">
+                        <label asp-for="SiteLocation">Site location <span class="req">*</span></label>
+                        <input asp-for="SiteLocation" class="input @Invalid("SiteLocation")" placeholder="e.g. Soshanguve, Pretoria" required />
+                        <span asp-validation-for="SiteLocation" class="err"></span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label asp-for="Budget">Indicative budget (R)</label>
+                    <input asp-for="Budget" type="number" min="0" step="1000" class="input @Invalid("Budget")" inputmode="numeric" />
+                    <span class="hint">Optional – helps our quantity surveyors give a realistic estimate.</span>
+                    <span asp-validation-for="Budget" class="err"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Description">Describe the work <span class="req">*</span></label>
+                    <textarea asp-for="Description" class="textarea @Invalid("Description")" maxlength="2000" required></textarea>
+                    <span asp-validation-for="Description" class="err"></span>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>3 · Business proposal document (optional)</legend>
+                <div class="drop" id="drop">
+                    <input type="file" id="Document" name="Document" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-describedby="fileHelp fileError" />
+                    <div>Drag &amp; drop your file here, or <label class="pick" for="Document">browse your computer</label></div>
+                    <div class="hint" id="fileHelp">PDF, DOC or DOCX · maximum 10&nbsp;MB</div>
+                    <div class="picked" id="picked" aria-live="polite"></div>
+                </div>
+                <span class="err" id="fileError" role="alert">@Html.ValidationMessageFor(m => m.Document)</span>
+            </fieldset>
+
+            <div class="field">
+                <label class="check">
+                    <input type="checkbox" id="Consent" name="Consent" value="true" @(Model.Consent ? "checked" : null) />
+                    <span>I agree that Ubuhlebethu may store and use the information and document above to assess my proposal and contact me, as described in the <a asp-controller="Home" asp-action="Privacy" target="_blank" rel="noopener">privacy notice</a>. <span class="req">*</span></span>
+                </label>
+                <span asp-validation-for="Consent" class="err"></span>
+            </div>
+
+            <button type="submit" class="btn block" id="submitBtn">Submit proposal</button>
+            <p class="hint" style="text-align:center;margin-top:.7rem">You'll get a reference number to track progress.</p>
+        </form>
+    </div>
+</div>

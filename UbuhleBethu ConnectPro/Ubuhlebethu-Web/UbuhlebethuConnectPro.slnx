@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/UbuhleBethu-WebApp/">
+    <Project Path="UbuhleBethu-WebApp/UbuhlebethuConnectPro.WebApp.csproj" />
+  </Folder>
+  <Project Path="UbuhlebethuConnectPro.Api/UbuhlebethuConnectPro.Api.csproj" />
+  <Project Path="UbuhlebethuConnectPro.Core/UbuhlebethuConnectPro.Core.csproj" />
+  <Project Path="UbuhlebethuConnectPro.Infrastructure/UbuhlebethuConnectPro.Infrastructure.csproj" />
+  <Project Path="UbuhlebethuConnectPro.Tests/UbuhlebethuConnectPro.Tests.csproj" />
+</Solution>

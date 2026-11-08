@@ -1,0 +1,71 @@
+@{
+    var title = ViewData["Title"] as string;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(string.IsNullOrEmpty(title) ? "Ubuhlebethu Business Enterprise" : title + " · Ubuhlebethu")</title>
+    <meta name="description" content="@(ViewData["Description"] ?? "Ubuhlebethu Business Enterprise cc – 100% black female-owned construction and civil engineering company based in Gauteng since 2002. View our completed buildings and submit a proposal.")" />
+    <meta name="theme-color" content="#b3202a" />
+    <link rel="icon" href="~/images/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="~/css/public.css" asp-append-version="true" />
+</head>
+<body class="pub">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="pub-header">
+        <div class="container bar">
+            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="Ubuhlebethu Business Enterprise – home">
+                <img src="~/images/logo.png" alt="" width="62" height="42" />
+                <span><b>Ubuhlebethu</b><small>BUSINESS ENTERPRISE CC</small></span>
+            </a>
+            <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mainNav" aria-label="Toggle menu">☰ Menu</button>
+            <nav class="nav" id="mainNav" aria-label="Main">
+                <a href="/#projects">Completed projects</a>
+                <a href="/#services">Services</a>
+                <a href="/#about">About</a>
+                <a asp-controller="Proposal" asp-action="Track">Track a proposal</a>
+                <a class="staff" asp-controller="Account" asp-action="Login">Staff &amp; client sign in</a>
+                <a class="staff" asp-controller="Account" asp-action="Register">Create client account</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">@RenderBody()</main>
+
+    <footer class="pub-footer">
+        <div class="container">
+            <div class="cols">
+                <div>
+                    <h4>Ubuhlebethu Business Enterprise cc</h4>
+                    <p>“Excellence Assured” – building and civil work across Gauteng, Free State, Mpumalanga, Limpopo and North West.</p>
+                </div>
+                <div>
+                    <h4>Head office</h4>
+                    <p>195 Corlett Drive, Bramley, 2018</p>
+                    <p>Tel: <a href="tel:0118877240">011 887 7240</a></p>
+                    <p><a href="mailto:info@ubuhlebethu.co.za">info@ubuhlebethu.co.za</a></p>
+                </div>
+                <div>
+                    <h4>Registrations</h4>
+                    <p>CIDB CRS 106467 · 8GB PE</p>
+                    <p>NHBRC 45492 · Level 1 B-BBEE</p>
+                    <p>Reg. 2002/095900/23</p>
+                </div>
+                <div>
+                    <h4>Quick links</h4>
+                    <p><a href="/#projects">Completed projects</a></p>
+                    <p><a asp-controller="Proposal" asp-action="Track">Track a proposal</a></p>
+                    <p><a asp-controller="Home" asp-action="Privacy">Privacy notice (POPIA)</a></p>
+                </div>
+            </div>
+            <p class="legal">© @DateTime.Now.Year Ubuhlebethu Business Enterprise cc. Project photographs come from the company profile and illustrate the type of work delivered.</p>
+        </div>
+    </footer>
+    <script src="~/js/public.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

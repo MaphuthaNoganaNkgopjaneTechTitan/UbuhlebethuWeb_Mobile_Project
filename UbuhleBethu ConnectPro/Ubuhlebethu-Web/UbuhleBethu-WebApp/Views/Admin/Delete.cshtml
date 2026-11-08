@@ -1,0 +1,125 @@
+@model UbuhlebethuConnectPro.WebApp.Controllers.AdminUserViewModel
+@{
+    ViewData["Title"] = $"Delete User — {Model.UserName}";
+    var lockout = ViewBag.LockoutEnd as System.DateTimeOffset?;
+    var isLockedOut = lockout.HasValue && lockout.Value > System.DateTimeOffset.UtcNow;
+}
+
+<div class="page-header mb-4">
+    <div>
+        <h1 class="page-title" style="color: var(--color-danger);">Permanently Delete User Account</h1>
+        <p class="page-subtitle">Administrative permanent deletion of user credentials and roles</p>
+    </div>
+    <div class="page-actions">
+        <a asp-action="Index" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Users
+        </a>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mb-4">@TempData["Error"]</div>
+}
+
+<div class="row">
+    <div class="col-lg-7 col-md-9">
+        <div class="alert alert-danger d-flex align-items-start gap-3 p-3 mb-4" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-md);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; color: var(--color-danger); flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div>
+                <strong style="color: var(--color-danger); font-size: 1rem;">Warning: Irreversible Hard Deletion</strong>
+                <p class="mb-0 mt-1" style="font-size: 0.88rem; color: #7f1d1d;">
+                    You are performing a <strong>permanent hard delete</strong> on user <strong>@Model.UserName</strong>. 
+                    This will remove the user's login credentials, profile, and role assignments completely from the system.
+                    Unlike <em>Deactivate (Lockout)</em>, this action cannot be undone.
+                </p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0" style="font-size: 1rem; font-weight: 600;">Account To Be Deleted</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Username:</div>
+                    <div class="col-sm-8 fw-bold">@Model.UserName</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Email:</div>
+                    <div class="col-sm-8">@Model.Email</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Assigned Roles:</div>
+                    <div class="col-sm-8">
+                        @if (Model.Roles != null && Model.Roles.Any())
+                        {
+                            foreach (var r in Model.Roles)
+                            {
+                                <span class="badge badge-neutral" style="margin-right: 4px;">@r</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">None</span>
+                        }
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Current Status:</div>
+                    <div class="col-sm-8">
+                        @if (isLockedOut)
+                        {
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; padding: 4px 8px; border-radius: var(--radius-sm);">Locked Out / Deactivated</span>
+                        }
+                        else
+                        {
+                            <span class="badge" style="background: rgba(34, 197, 94, 0.12); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3); font-weight: 600; padding: 4px 8px; border-radius: var(--radius-sm);">Active</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0" style="font-size: 1rem; font-weight: 600;">Audit Log Justification</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+
+                    <div class="mb-3">
+                        <label for="deleteReason" class="form-label fw-bold">
+                            Reason for Permanent Deletion <span class="text-danger">*</span>
+                        </label>
+                        <textarea id="deleteReason" name="reason" class="form-control" rows="3" maxlength="500" placeholder="Please explain why this user is being permanently deleted (e.g., requested GDPR/POPIA erasure, duplicate account, offboarded contractor)..." required></textarea>
+                        <div class="form-text">This justification will be permanently recorded in the system audit logs under your administrative user.</div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Confirm Hard Delete
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

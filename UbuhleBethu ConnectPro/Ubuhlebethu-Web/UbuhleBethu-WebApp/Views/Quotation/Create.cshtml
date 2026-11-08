@@ -1,0 +1,265 @@
+@model UbuhlebethuConnectPro.Core.Models.QuoteRequest
+
+@{
+    ViewData["Title"] = "Request a Quotation";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">New Quotation Request</h1>
+        <p class="page-subtitle">Complete all fields to submit your quotation request for review</p>
+    </div>
+    <div class="page-actions">
+        <div class="table-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" placeholder="Search templates..." />
+        </div>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 2fr 1.05fr; gap:24px; align-items:start;">
+
+    <!-- ── Left Column: Form ── -->
+    <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="card-title">Project Information</span>
+            <span class="badge badge-warning">Draft</span>
+        </div>
+        <div class="card-body">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div style="text-align: center; padding: 40px 20px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" style="width: 64px; height: 64px; margin-bottom: 20px;">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">Request Submitted Successfully!</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 30px;">@TempData["SuccessMessage"]</p>
+
+                    <a href="@(User.IsInRole("Client") ? Url.Action("ClientPortal", "Dashboard") : Url.Action("Index", "Dashboard"))" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Back to Dashboard
+                    </a>
+                </div>
+            }
+            else
+            {
+                <form asp-action="Create" method="post" id="quoteForm">
+                    <!-- Client Information -->
+                    <div style="margin-bottom:22px;">
+                        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--color-border);">
+                            Client Information
+                        </div>
+                        <div class="form-group mb-3">
+                            <label asp-for="ClientName" class="form-label">Client / Organisation Name</label>
+                            <input asp-for="ClientName" class="form-control"
+                                   placeholder="e.g. Department of Human Settlements / John Smith" required />
+                        </div>
+                        <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="form-group">
+                                <label asp-for="Email" class="form-label">Email Address</label>
+                                <input asp-for="Email" type="email" class="form-control"
+                                       placeholder="email@organisation.co.za" required />
+                            </div>
+                            <div class="form-group">
+                                <label asp-for="Phone" class="form-label">Phone / WhatsApp</label>
+                                <input asp-for="Phone" class="form-control"
+                                       placeholder="+27 xx xxx xxxx" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Details -->
+                    <div style="margin-bottom:22px;">
+                        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--color-border);">
+                            Project Details
+                        </div>
+                        <div class="form-row mb-3" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="form-group">
+                                <label asp-for="ProjectType" class="form-label">Project Type</label>
+                                <select asp-for="ProjectType" class="form-select" required>
+                                    <option value="">Select project type...</option>
+                                    <option value="RDP / Social Housing">RDP / Social Housing</option>
+                                    <option value="Civil Infrastructure">Civil Infrastructure</option>
+                                    <option value="School / Clinic Build">School / Clinic Build</option>
+                                    <option value="Commercial / Tenant Install">Commercial Building</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label asp-for="EstimatedBudget" class="form-label">Target Budget (ZAR)</label>
+                                    <button type="button" onclick="toggleCurrencyModal()" style="background:none; border:none; color:var(--color-primary); font-size:0.75rem; font-weight:600; cursor:pointer; padding:0; text-decoration:underline;">
+                                        Convert from foreign currency?
+                                    </button>
+                                </div>
+                                <div style="position:relative;">
+                                    <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:0.85rem; font-weight:700; color:var(--text-muted);">R</span>
+                                    <input asp-for="EstimatedBudget" id="estimatedBudgetZar" type="number" step="0.01" class="form-control"
+                                           placeholder="0.00" style="padding-left:28px;" required />
+                                </div>
+                                <small id="currencyNotice" class="text-muted" style="font-size:0.7rem;"></small>
+                            </div>
+                        </div>
+
+                        <!-- In-Form Currency Converter Box -->
+                        <div id="currencyBox" style="display:none; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+                            <div style="font-size:0.76rem; font-weight:700; color:#9b1c1c; margin-bottom:6px;">
+                                International Currency Converter &rarr; ZAR
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1fr 1.2fr auto; gap:10px; align-items:center;">
+                                <div>
+                                    <label class="form-label" style="font-size:0.7rem;">Your Currency</label>
+                                    <select id="foreignCurrency" class="form-select form-select-sm" style="font-size:0.78rem;">
+                                        @foreach (var currency in (IReadOnlyDictionary<string, string>)ViewData["Currencies"]!)
+                                        {
+                                            <option value="@currency.Key">@currency.Key - @currency.Value</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:0.7rem;">Amount in Local Currency</label>
+                                    <input type="number" id="foreignAmount" step="0.01" class="form-control form-control-sm" placeholder="e.g. 50000" style="font-size:0.78rem;" />
+                                </div>
+                                <div style="align-self:end;">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="applyCurrencyConversion()" style="padding:5px 12px; font-size:0.78rem; font-weight:600;">
+                                        Apply to Budget
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="SiteLocation" class="form-label">Site Address / Province</label>
+                            <input asp-for="SiteLocation" class="form-control"
+                                   placeholder="e.g. 123 Main Street, Soweto, Gauteng" required />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label asp-for="ProjectDescription" class="form-label">Scope of Work</label>
+                            <textarea asp-for="ProjectDescription" class="form-control" rows="4"
+                                      placeholder="Describe the full scope of work, specifications, and any special requirements..." required></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+                        <a asp-controller="Dashboard" asp-action="@(User.IsInRole("Client") ? "ClientPortal" : "Index")" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" style="background:#9b1c1c; border-color:#9b1c1c; display:inline-flex; align-items:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                                <line x1="22" y1="2" x2="11" y2="13" />
+                                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg>
+                            Submit Quotation Request
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- ── Right Column: Info Sidebar (Next to the Form) ── -->
+    <div style="display:flex; flex-direction:column; gap:16px; position:sticky; top:20px;">
+        <!-- How it works card -->
+        <div class="card" style="background:var(--color-content-bg); border:1px solid var(--color-border);">
+            <div class="card-body" style="padding:18px;">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--text-primary); margin-bottom:14px; border-bottom:1px solid var(--color-border); padding-bottom:8px;">
+                    How it works
+                </div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div style="width:22px; height:22px; border-radius:50%; background:#9b1c1c; color:#fff; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
+                        <div>
+                            <div style="font-size:0.78rem; font-weight:600; color:var(--text-primary);">Submit Request</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.4;">Complete the form and submit your project scope.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div style="width:22px; height:22px; border-radius:50%; background:#9b1c1c; color:#fff; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
+                        <div>
+                            <div style="font-size:0.78rem; font-weight:600; color:var(--text-primary);">QS Review</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.4;">Our quantity surveying team inspects scope and prepares BOQ.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div style="width:22px; height:22px; border-radius:50%; background:#9b1c1c; color:#fff; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">3</div>
+                        <div>
+                            <div style="font-size:0.78rem; font-weight:600; color:var(--text-primary);">Receive Quote</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.4;">Detailed quotation and formal invoice sent within 48h.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div style="width:22px; height:22px; border-radius:50%; background:#f07a1a; color:#fff; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">4</div>
+                        <div>
+                            <div style="font-size:0.78rem; font-weight:600; color:var(--text-primary);">Approval &amp; Start</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.4;">Project kick-off and contractor deployment upon acceptance.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Need assistance card -->
+        <div class="card" style="background:#fff7ed; border:1px solid #fed7aa;">
+            <div class="card-body" style="padding:16px;">
+                <div style="font-size:0.78rem; font-weight:700; color:#c2410c; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    Need assistance?
+                </div>
+                <div style="font-size:0.74rem; color:#7c2d12; line-height:1.5;">
+                    Contact our office team for complex commercial projects or government tenders requiring CIDB grading documentation (CRS 106467, 8GB PE).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCurrencyModal() {
+        const box = document.getElementById('currencyBox');
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function applyCurrencyConversion() {
+        const curr = document.getElementById('foreignCurrency').value;
+        const amount = parseFloat(document.getElementById('foreignAmount').value);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert('Please enter a valid amount in your local currency.');
+            return;
+        }
+
+        const notice = document.getElementById('currencyNotice');
+        notice.innerText = 'Getting the latest exchange rate...';
+        notice.style.color = 'var(--text-muted)';
+
+        try {
+            const query = new URLSearchParams({ amount: amount.toString(), from: curr, to: 'ZAR' });
+            const response = await fetch('@Url.Action("Convert", "Currency")?' + query.toString(), {
+                headers: { 'Accept': 'application/json' }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'The exchange-rate service is unavailable.');
+
+            const calculatedZar = Number(result.converted).toFixed(2);
+            const rate = Number(result.rate);
+            document.getElementById('estimatedBudgetZar').value = calculatedZar;
+            notice.innerText = `Converted from ${curr} ${amount.toLocaleString()} at rate ${rate.toFixed(4)} ZAR/unit. Target set to R ${Number(calculatedZar).toLocaleString()}.` + (result.isLive ? '' : ' (approximate rate)');
+            notice.style.color = result.isLive ? '#16a34a' : '#b45309';
+            document.getElementById('currencyBox').style.display = 'none';
+        } catch (error) {
+            notice.innerText = error.message || 'Unable to convert currency. Please try again.';
+            notice.style.color = '#b91c1c';
+        }
+    }
+</script>

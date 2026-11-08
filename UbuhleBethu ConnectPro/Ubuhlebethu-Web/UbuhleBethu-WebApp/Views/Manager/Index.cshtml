@@ -1,0 +1,50 @@
+@model UbuhlebethuConnectPro.Core.Models.DTOs.ManagerDashboardViewModel
+@{
+    ViewData["Title"] = "Manager Dashboard";
+}
+
+<h2>Manager / Financial Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h6>Total Projects</h6>
+            <div class="display-6">@Model.TotalProjects</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h6>Total Value</h6>
+            <div class="display-6">@((decimal)Model.TotalValue).ToString("C")</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h6>Total Invoiced</h6>
+            <div class="display-6">@((decimal)Model.TotalInvoiced).ToString("C")</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h6>Total Paid</h6>
+            <div class="display-6">@((decimal)Model.TotalPaid).ToString("C")</div>
+        </div>
+    </div>
+</div>
+
+<h4>Recent Invoices</h4>
+<table class="table">
+    <thead><tr><th>Id</th><th>QuoteRef</th><th>Amount</th><th>Date</th><th>Paid</th></tr></thead>
+    <tbody>
+    @foreach(var i in Model.RecentInvoices)
+    {
+        <tr>
+            <td>@i.Id</td>
+            <td>@i.QuoteRequestId</td>
+            <td>@i.Amount.ToString("C")</td>
+            <td>@i.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
+            <td>@(i.IsPaid ? "Yes" : "No")</td>
+        </tr>
+    }
+    </tbody>
+</table>

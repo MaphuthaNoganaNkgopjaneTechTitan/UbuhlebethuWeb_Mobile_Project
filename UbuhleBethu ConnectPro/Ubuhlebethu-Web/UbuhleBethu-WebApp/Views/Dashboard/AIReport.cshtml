@@ -1,0 +1,68 @@
+@model List<UbuhlebethuConnectPro.Core.Models.Job>
+@{
+    ViewData["Title"] = "AI Insights";
+    var raw = (ViewBag.AiInsight as string) ?? string.Empty;
+    // Split into paragraphs; every paragraph is HTML-encoded by Razor (no Html.Raw => no XSS).
+    var paragraphs = raw.Replace("\r", "")
+        .Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
+        .Select(p => p.Trim().Replace("**", "").Replace("##", "").Trim())
+        .Where(p => p.Length > 0)
+        .ToList();
+    var jobs = Model ?? new List<UbuhlebethuConnectPro.Core.Models.Job>();
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">AI Insights</h1>
+        <p class="page-subtitle">AI analysis of project performance and financial forecasting.</p>
+    </div>
+</div>
+
+<div class="ai-layout">
+    <section class="ai-card" aria-labelledby="ai-h">
+        <header class="ai-card-head">
+            <span class="ai-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </span>
+            <h2 id="ai-h" class="ai-card-title">Live AI Analysis</h2>
+        </header>
+
+        <div class="ai-kpis">
+            <div class="ai-kpi"><span class="ai-kpi-num">@jobs.Count</span><span class="ai-kpi-label">Projects analysed</span></div>
+            <div class="ai-kpi"><span class="ai-kpi-num">@jobs.Count(j => j.Status == "In Progress")</span><span class="ai-kpi-label">In progress</span></div>
+            <div class="ai-kpi"><span class="ai-kpi-num">@jobs.Sum(j => j.EstimatedCost).ToString("N0")</span><span class="ai-kpi-label">Total estimate (ZAR)</span></div>
+        </div>
+
+        <div class="ai-body">
+            @if (paragraphs.Count == 0)
+            {
+                <p>No analysis is available right now. Please try again shortly.</p>
+            }
+            else
+            {
+                var labels = new[] { "Budget risk", "Revenue and status trends", "Recommendation" };
+                for (int i = 0; i < paragraphs.Count; i++)
+                {
+                    <div class="ai-para">
+                        <h3 class="ai-para-title">@(i < labels.Length ? labels[i] : "Note " + (i + 1))</h3>
+                        <p>@paragraphs[i]</p>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+
+    <aside class="ai-card" aria-labelledby="ai-g">
+        <h2 id="ai-g" class="ai-card-title">Generate Report</h2>
+        <p class="ai-help">Choose a focus area and download a text report generated from the current project data.</p>
+        <form method="post" asp-controller="Dashboard" asp-action="GenerateAIReport">
+            <label class="ai-label" for="focusArea">Focus Area</label>
+            <select id="focusArea" name="focusArea" class="form-select">
+                <option value="Financial Risk Analysis">Financial Risk Analysis</option>
+                <option value="Resource Allocation">Resource Allocation</option>
+                <option value="Market Demand Forecast">Market Demand Forecast</option>
+            </select>
+            <button type="submit" class="btn btn-primary w-100" style="margin-top:16px;">Run Analysis</button>
+        </form>
+    </aside>
+</div>

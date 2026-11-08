@@ -1,0 +1,151 @@
+@using UbuhlebethuConnectPro.WebApp.Models.Portfolio
+@model IReadOnlyList<PortfolioProject>
+@{
+    ViewData["Title"] = "Completed buildings & projects";
+    Layout = "_PublicLayout";
+    var services = new[]
+    {
+        ("Building construction", "Social, RDP and GAP housing, student accommodation, schools, clinics, tenant installations and railway station refurbishments."),
+        ("Civil construction", "Water and sewage, reticulation, road construction and road maintenance."),
+        ("Building demolitions", "Safe, planned demolition of hostels, student accommodation and commercial buildings."),
+        ("Mechanical & electrical", "Integrated mechanical and electrical works delivered with our building projects."),
+        ("Property development", "Design, development and sale of residential property.")
+    };
+}
+
+<section class="hero" aria-labelledby="hero-title">
+    <div class="container">
+        <div class="inner">
+            <span class="eyebrow">Established 2002 · 100% black female-owned</span>
+            <h1 id="hero-title">Quality buildings that serve South African communities</h1>
+            <p>From RDP housing and clinics to schools and city-centre conversions, Ubuhlebethu has delivered over R200&nbsp;million of construction and civil work. Browse our completed projects, then send us your proposal.</p>
+            <div class="actions">
+                <a class="btn light" href="#projects">View completed projects</a>
+                <a class="btn ghost" style="color:#fff;border-color:#fff" asp-controller="Proposal" asp-action="Submit">Submit a proposal</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stats" aria-label="Company at a glance">
+    <div class="container">
+        <ul>
+            <li><strong>2002</strong><span>Year established</span></li>
+            <li><strong>R200m+</strong><span>Turnover since inception</span></li>
+            <li><strong>CIDB 8GB PE</strong><span>Building grading</span></li>
+            <li><strong>Level 1</strong><span>B-BBEE contributor</span></li>
+            <li><strong>NHBRC</strong><span>Registered home builder</span></li>
+        </ul>
+    </div>
+</section>
+
+<section class="block" id="projects" aria-labelledby="projects-h">
+    <div class="container">
+        <div class="sec-head">
+            <span class="kicker">Our work</span>
+            <h2 id="projects-h">Completed buildings &amp; projects</h2>
+            <p>Every project below has been completed by Ubuhlebethu as sole contractor or through joint ventures. Like what you see? Use <strong>View photos</strong> on any project to see more pictures, then <strong>Submit your proposal</strong> below.</p>
+        </div>
+
+        <div class="filters" role="group" aria-label="Filter projects by type">
+            <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+            @foreach (var c in PortfolioCatalog.Categories)
+            {
+                <button type="button" class="chip" data-filter="@c" aria-pressed="false">@c</button>
+            }
+        </div>
+        <p class="count" id="projCount" aria-live="polite">Showing @Model.Count of @Model.Count completed projects</p>
+
+        <div class="grid">
+            @foreach (var p in Model.OrderByDescending(x => x.Gallery.Count > 1))
+            {
+                var photos = p.Gallery;
+                <article class="card" data-category="@p.Category">
+                    <div class="ph">
+                        <img src="@p.ImageUrl" alt="@p.Name" loading="lazy" width="800" height="600" />
+                        <span class="tag">@p.Category</span>
+                    </div>
+                    <div class="body">
+                        <h3>@p.Name</h3>
+                        @if (!string.IsNullOrEmpty(p.Scope))
+                        {
+                            <p class="scope">@p.Scope</p>
+                        }
+                        @if (p.HasContractDetails)
+                        {
+                            <p class="facts"><strong>@p.ContractSum</strong> <span>· @p.Period</span> @if (!string.IsNullOrEmpty(p.Institution)) { <span>· @p.Institution</span> }</p>
+                        }
+                    </div>
+                    <div class="foot">
+                        <div class="foot-row">
+                            <span class="pill-done">Completed</span>
+                            <button type="button" class="btn ghost sm" data-gallery="@string.Join("|", photos)" data-title="@p.Name">View @photos.Count photo@(photos.Count == 1 ? "" : "s")</button>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+
+        <div class="proposal-cta">
+            <p>Like what you see? Tell us about your project and attach your business proposal.</p>
+            <a class="btn" asp-controller="Proposal" asp-action="Submit">Submit your proposal</a>
+        </div>
+    </div>
+</section>
+
+<section class="block alt" id="services" aria-labelledby="services-h">
+    <div class="container">
+        <div class="sec-head">
+            <span class="kicker">What we do</span>
+            <h2 id="services-h">Comprehensive construction &amp; civil services</h2>
+            <p>For national, provincial and local government and the private sector.</p>
+        </div>
+        <div class="services">
+            @{ var i = 0; }
+            @foreach (var (name, text) in services)
+            {
+                i++;
+                <div class="service"><span class="n">0@(i)</span><h3>@name</h3><p>@text</p></div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="block" id="about" aria-labelledby="about-h">
+    <div class="container split">
+        <div>
+            <span class="kicker">About us</span>
+            <h2 id="about-h" style="font-family:var(--font-head);font-size:clamp(1.7rem,3.6vw,2.4rem);margin:.2rem 0 .8rem">“Ubuhlebethu” means “our beauty”</h2>
+            <p>Our beauty shines through all our construction and civil work. We are dedicated to quality, simplicity, innovation, functionality, and the well-being and empowerment of our employees and the communities we operate in.</p>
+            <p>Winner of the 2012 Gauteng Province Govan Mbeki Woman Construction Company of the Year award, led by Managing Member Qondi Ledwaba, with qualified civil engineers, quantity surveyors, architects and project managers on our team.</p>
+            <ul class="ticks">
+                <li>CIDB grades: 8GB PE, 6CE PE, 6SE PE, 6ME PE, 6EP PE, 7SQ PE</li>
+                <li>Registered with the NHBRC (no. 45492) as a home builder</li>
+                <li>Level 1 B-BBEE contributor</li>
+            </ul>
+        </div>
+        <img src="~/images/portfolio/about-site-team.jpg" alt="Ubuhlebethu site team pouring concrete at sunset" loading="lazy" />
+    </div>
+</section>
+
+<section class="block cta" aria-labelledby="cta-h">
+    <div class="container">
+        <h2 id="cta-h">Have a project in mind?</h2>
+        <p>Tell us about yourself and attach your business proposal. Our office team reviews every submission and replies by email or phone.</p>
+        <a class="btn light" asp-controller="Proposal" asp-action="Submit">Submit a proposal</a>
+    </div>
+</section>
+
+<dialog id="galleryDialog" class="gallery" aria-labelledby="galleryTitle">
+    <div class="g-head">
+        <h3 id="galleryTitle"></h3>
+        <button type="button" class="g-close" id="gClose" aria-label="Close photos">&times;</button>
+    </div>
+    <div class="g-stage">
+        <button type="button" class="g-nav" id="gPrev" aria-label="Previous photo">&#8249;</button>
+        <img id="gImg" alt="" />
+        <button type="button" class="g-nav" id="gNext" aria-label="Next photo">&#8250;</button>
+    </div>
+    <p class="g-count" id="gCount" aria-live="polite"></p>
+    <div class="g-thumbs" id="gThumbs"></div>
+</dialog>

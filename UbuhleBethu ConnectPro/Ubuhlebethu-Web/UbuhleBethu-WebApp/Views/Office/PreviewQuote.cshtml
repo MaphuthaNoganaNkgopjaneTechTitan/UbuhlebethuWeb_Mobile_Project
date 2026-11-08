@@ -1,0 +1,185 @@
+@model UbuhlebethuConnectPro.Core.Models.QuoteRequest
+@{ ViewData["Title"] = "Review Quote — " + Model.Reference; }
+
+<div style="margin-bottom: 1rem;">
+    <a href="/Office/PendingQuotes" class="btn btn-secondary">Back to Queue</a>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">@Model.Reference</h1>
+    <p class="page-subtitle">Client Quotation Review & Estimation</p>
+</div>
+
+<div class="metric-strip">
+    <div class="metric-item">
+        <div class="kpi-label">Client</div>
+        <div class="kpi-value" style="font-size: 1.1rem;">@Model.ClientName</div>
+    </div>
+    <div class="metric-item">
+        <div class="kpi-label">Project Type</div>
+        <div class="kpi-value" style="font-size: 1.1rem;">@Model.ProjectType</div>
+    </div>
+    <div class="metric-item">
+        <div class="kpi-label">Submitted</div>
+        <div class="kpi-value" style="font-size: 1.1rem;">@Model.RequestDate.ToString("yyyy-MM-dd")</div>
+    </div>
+    <div class="metric-item">
+        <div class="kpi-label">Status</div>
+        <div class="kpi-value" style="font-size: 1.1rem;">
+            <span class="badge badge-primary">@Model.Status</span>
+        </div>
+    </div>
+</div>
+
+<div class="tab-nav">
+    <a href="javascript:void(0);" class="tab-nav-link active">Quote Details</a>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 24px;">
+    <div class="card">
+        <div class="card-header">
+            <h2 style="margin: 0; font-size: 1.25rem;">Quotation Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="detail-field">
+                <span class="detail-key">Reference</span>
+                <span class="detail-val">@Model.Reference</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Client Name</span>
+                <span class="detail-val">@Model.ClientName</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Email</span>
+                <span class="detail-val">@Model.Email</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Phone</span>
+                <span class="detail-val">@Model.Phone</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Project Type</span>
+                <span class="detail-val">@Model.ProjectType</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Site Location</span>
+                <span class="detail-val">@Model.SiteLocation</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Budget Requested</span>
+                <span class="detail-val">@(Model.EstimatedBudget > 0 ? $"R {Model.EstimatedBudget:N2}" : "Not Specified")</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-key">Status</span>
+                <span class="detail-val"><span class="badge badge-neutral">@Model.Status</span></span>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <span class="detail-key" style="display: block; margin-bottom: 8px;">Scope of Work</span>
+                <div style="background-color: #faf8f8; border: 1px solid #ddd; padding: 16px; border-radius: 4px; min-height: 100px;">
+                    @Model.ProjectDescription
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.25rem;">AI Draft Estimate</h2>
+                <span class="badge badge-warning">AI Assisted</span>
+            </div>
+            <div class="card-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 0.9rem; color: #666; margin-bottom: 4px;">Current Estimate</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #9b1c1c;">
+                        @(Model.EstimatedBudget > 0 ? $"R {Model.EstimatedBudget:N2}" : "Not yet estimated")
+                    </div>
+                </div>
+                
+                <form method="post" action="/Office/GenerateDraftEstimate/@Model.Id">
+                    <button type="submit" class="btn btn-action-blue" style="width: 100%; margin-bottom: 12px;">Generate AI Draft Estimate</button>
+                </form>
+                
+                <p style="font-size: 0.85rem; color: #666; text-align: center; margin: 0;">
+                    AI analyses project type and scope to produce a starting BOQ estimate.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 style="margin: 0; font-size: 1.25rem;">Workflow Actions</h2>
+            </div>
+            <div class="card-body">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success" style="margin-bottom: 16px;">
+                        @TempData["SuccessMessage"]
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger" style="margin-bottom: 16px;">
+                        @TempData["ErrorMessage"]
+                    </div>
+                }
+                
+                @if (Model.Status == "Draft" || Model.Status == "Submitted" || Model.Status == "Reviewed")
+                {
+                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">
+                        Review estimate of <strong>@(Model.EstimatedBudget > 0 ? $"R {Model.EstimatedBudget:N2}" : "TBD")</strong> and submit to Manager for sign-off:
+                    </p>
+                    <form method="post" action="/Office/SendToManager/@Model.Id" style="margin-bottom: 12px;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="estimatedBudget" value="@Model.EstimatedBudget" />
+                        <button type="submit" class="btn btn-warning" style="width: 100%;">Send to Manager for Sign-Off</button>
+                    </form>
+                }
+                else if (Model.Status == "Under Review")
+                {
+                    <div class="alert alert-warning" style="font-size: 0.85rem; margin-bottom: 0;">
+                        <strong>Pending Sign-Off:</strong> Currently under review by Management. Invoices can only be generated once signed off.
+                    </div>
+                }
+                else if (Model.Status == "ManagerApproved")
+                {
+                    <div class="alert alert-success" style="font-size: 0.85rem; margin-bottom: 12px;">
+                        <strong>Manager Signed Off:</strong> Management approved estimate of <strong>R @Model.EstimatedBudget.ToString("N2")</strong>.
+                    </div>
+                    <form method="post" action="/Office/SendInvoice/@Model.Id" style="margin-bottom: 12px;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-action-green" style="width: 100%;">Generate & Send Invoice (R @Model.EstimatedBudget.ToString("N2"))</button>
+                    </form>
+                    <form method="post" action="/Office/ApproveQuote/@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-action-blue" style="width: 100%;">Approve & Create Project</button>
+                    </form>
+                }
+                else if (Model.Status == "Approved" || Model.Status == "Invoiced")
+                {
+                    <div class="alert alert-success" style="font-size: 0.85rem; margin-bottom: 12px;">
+                        <strong>Approved & Invoiced:</strong> Invoice amount matches approved estimate of <strong>R @Model.EstimatedBudget.ToString("N2")</strong>.
+                    </div>
+                    @if (Model.InvoiceId.HasValue)
+                    {
+                        <a href="/Invoice/Preview/@Model.InvoiceId" target="_blank" class="btn btn-secondary" style="width: 100%; margin-bottom: 8px; text-align: center; display: block;">Preview Invoice</a>
+                        <a href="/Invoice/Download/@Model.InvoiceId" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Download Invoice</a>
+                    }
+                }
+                else if (Model.Status == "Rejected")
+                {
+                    <div class="alert alert-danger" style="font-size: 0.85rem; margin-bottom: 12px;">
+                        <strong>Manager Declined:</strong> Revise scope and estimate to resubmit.
+                    </div>
+                    <form method="post" action="/Office/SendToManager/@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="estimatedBudget" value="@Model.EstimatedBudget" />
+                        <button type="submit" class="btn btn-outline-warning" style="width: 100%;">Resubmit to Manager</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

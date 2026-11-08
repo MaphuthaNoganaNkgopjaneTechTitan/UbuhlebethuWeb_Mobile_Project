@@ -1,0 +1,71 @@
+@model IEnumerable<UbuhlebethuConnectPro.WebApp.ApiClient.QuoteDto>
+
+@{
+    ViewData["Title"] = "Quotations";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Quotations</h1>
+        <p class="page-subtitle">List of all quotation requests</p>
+    </div>
+    <div class="page-actions">
+        <a asp-controller="Quotation" asp-action="Create" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Quotation
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model == null || !Model.Any())
+        {
+            <p class="text-center">No quotations found.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Client</th>
+                        <th>Project Type</th>
+                        <th>Estimated Budget</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var quote in Model)
+                    {
+                        <tr>
+                            <td>@quote.Reference</td>
+                            <td>@quote.ClientName</td>
+                            <td>@quote.ProjectType</td>
+                            <td>R @quote.EstimatedBudget.ToString("N2")</td>
+                            <td>
+                                <span class="badge @(quote.Status switch {
+                                    "Approved" => "badge-success",
+                                    "Paid" => "badge-success",
+                                    "Invoiced" => "badge-primary",
+                                    "Reviewed" => "badge-info",
+                                    "Submitted" => "badge-submitted",
+                                    _ => "badge-neutral"
+                                })">@quote.Status</span>
+                            </td>
+                            <td>@quote.RequestDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@quote.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

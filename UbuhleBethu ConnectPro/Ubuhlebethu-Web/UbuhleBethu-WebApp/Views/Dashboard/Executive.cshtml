@@ -1,0 +1,164 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+
+@{
+    ViewData["Title"] = "Executive Overview";
+    decimal totalValue = (decimal)(ViewBag.TotalValue ?? 0m);
+    decimal totalInvoiced = (decimal)(ViewBag.TotalInvoiced ?? 0m);
+    int totalProjects = (int)(ViewBag.TotalProjects ?? 0);
+    int avgProgress = (int)(ViewBag.AvgProgress ?? 0);
+    decimal collected = totalValue > 0 ? (totalInvoiced / totalValue) * 100 : 0;
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Executive Operations Dashboard</h1>
+        <p class="page-subtitle">Ubuhlebethu Business Enterprise — multi-site strategic overview</p>
+    </div>
+    <div class="page-actions">
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-right:8px;">
+            Last updated: @DateTime.Now.ToString("dd MMM yyyy, HH:mm")
+        </div>
+        <a class="btn btn-secondary btn-sm" href="/Dashboard/DownloadCsv?module=Projects" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Report
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-blue">
+        <div class="kpi-label">Active Projects</div>
+        <div class="kpi-value">@totalProjects</div>
+        <div class="kpi-sub">Across all sites &amp; regions</div>
+    </div>
+    <div class="kpi-card kpi-green">
+        <div class="kpi-label">Order Book Value</div>
+        <div class="kpi-value" style="font-size:1.5rem;">R @totalValue.ToString("N0")</div>
+        <div class="kpi-sub">Total contracted project value</div>
+    </div>
+    <div class="kpi-card kpi-orange">
+        <div class="kpi-label">Total Invoiced</div>
+        <div class="kpi-value" style="font-size:1.5rem;">R @totalInvoiced.ToString("N0")</div>
+        <div class="kpi-sub">
+            <div class="progress-bar-wrap" style="margin-top:6px;">
+                <div class="progress-track">
+                    <div class="progress-fill warning" style="width:@((int)collected)%;"></div>
+                </div>
+                <span class="progress-pct">@((int)collected)% collected</span>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card kpi-teal">
+        <div class="kpi-label">Average Completion</div>
+        <div class="kpi-value">@avgProgress<span style="font-size:1.1rem; font-weight:500;">%</span></div>
+        <div class="kpi-sub">
+            <div class="progress-bar-wrap" style="margin-top:6px;">
+                <div class="progress-track">
+                    <div class="progress-fill primary" style="width:@avgProgress%;"></div>
+                </div>
+                <span class="progress-pct">Portfolio progress</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ops Table -->
+<div class="data-table-wrap">
+    <div class="data-table-header">
+        <p class="data-table-title">
+            Multi-Site Operational Status
+            <span>(@Model.Count() projects)</span>
+        </p>
+        <div class="table-controls">
+            <div class="table-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" placeholder="Filter..." id="execSearch" oninput="execFilter()" />
+            </div>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="execTable">
+            <thead>
+                <tr>
+                    <th>Job Ref</th>
+                    <th>Client / Organisation</th>
+                    <th>Region</th>
+                    <th>Type</th>
+                    <th>Progress</th>
+                    <th>Variance</th>
+                    <th>Est. Budget</th>
+                    <th>NHBRC</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var job in Model)
+                {
+                    string progColor = job.Progress >= 70 ? "success" : job.Progress >= 40 ? "warning" : "primary";
+                    string varBadge = job.Variance <= 10 ? "badge-success" : job.Variance <= 20 ? "badge-warning" : "badge-danger";
+                    <tr>
+                        <td>
+                            <a asp-controller="Dashboard" asp-action="Details" asp-route-id="@job.Id"
+                               class="td-primary" style="color:var(--color-primary);">
+                                @job.JobNumber
+                            </a>
+                        </td>
+                        <td>@job.ClientName</td>
+                        <td>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="vertical-align:-2px; margin-right:4px;">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            @job.Location
+                        </td>
+                        <td><span class="badge badge-neutral">@job.BuildingType</span></td>
+                        <td style="min-width:140px;">
+                            <div class="progress-bar-wrap">
+                                <div class="progress-track">
+                                    <div class="progress-fill @progColor" style="width:@(job.Progress)%;"></div>
+                                </div>
+                                <span class="progress-pct">@job.Progress%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge @varBadge">
+                                @(job.Variance > 0 ? "+" : "")@job.Variance%
+                            </span>
+                        </td>
+                        <td>R @job.EstimatedCost.ToString("N0")</td>
+                        <td>
+                            @if (job.NhbrcCompliant)
+                            {
+                                <span class="badge badge-success">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:3px;">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Verified
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-warning">Pending</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function execFilter() {
+            var q = document.getElementById('execSearch').value.toLowerCase();
+            document.querySelectorAll('#execTable tbody tr').forEach(function(r) {
+                r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+    </script>
+}

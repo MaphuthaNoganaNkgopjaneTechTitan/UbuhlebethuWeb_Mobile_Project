@@ -1,0 +1,774 @@
+@model UbuhlebethuConnectPro.WebApp.Models.DTOs.PrintInvoiceViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = $"Tax Invoice - {Model.InvoiceNumber}";
+    var ci = System.Globalization.CultureInfo.GetCultureInfo("en-ZA");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - UbuhleBethu ConnectPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-primary: #9b1c1c;
+            --brand-dark: #771d1d;
+            --brand-light: #fdf2f2;
+            --text-main: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --bg-light: #f8fafc;
+            --success: #15803d;
+            --warning: #b45309;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-size: 13px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Action Ribbon (Screen Only) */
+        .top-action-bar {
+            background: #1e293b;
+            color: #fff;
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .action-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .action-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border-color: rgba(255,255,255,0.2);
+        }
+        .btn-back:hover {
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+        }
+
+        .btn-print {
+            background: #2563eb;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+        }
+        .btn-print:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+        .btn-download {
+            background: #059669;
+            color: #fff;
+        }
+        .btn-download:hover {
+            background: #047857;
+            color: #fff;
+        }
+
+        /* Invoice Container */
+        .page-container {
+            max-width: 900px;
+            margin: 28px auto 40px;
+            padding: 0 16px;
+        }
+
+        .invoice-paper {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06), 0 8px 10px -6px rgba(0,0,0,0.04);
+            overflow: hidden;
+            padding: 44px 50px;
+            position: relative;
+        }
+
+        /* Top decorative band */
+        .invoice-brand-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--brand-primary) 0%, #dc2626 50%, #b91c1c 100%);
+        }
+
+        /* Header Layout */
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 28px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+
+        .brand-logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .brand-logo-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: var(--brand-primary);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            letter-spacing: -1px;
+            box-shadow: 0 3px 6px rgba(155,28,28,0.25);
+        }
+
+        .company-title {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--brand-primary);
+            text-transform: uppercase;
+        }
+
+        .company-subtitle {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .company-contact {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-top: 6px;
+        }
+
+        .invoice-meta-box {
+            text-align: right;
+            min-width: 260px;
+        }
+
+        .doc-title-badge {
+            display: inline-block;
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--brand-primary);
+            letter-spacing: 0.02em;
+            margin-bottom: 4px;
+        }
+
+        .invoice-number-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        .meta-list {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .meta-list strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .badge-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 6px;
+        }
+        .badge-paid { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-partial { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .badge-unpaid { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+        /* Client & Project Details */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            background: var(--bg-light);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 18px 22px;
+            margin-bottom: 28px;
+        }
+
+        .info-col-title {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--brand-primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-primary {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .info-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Progressive Milestone Breakdown Section */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .section-sub {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .table-invoice {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 22px;
+        }
+
+        .table-invoice th {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 2px solid #cbd5e1;
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            text-align: left;
+        }
+
+        .table-invoice td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12.5px;
+            vertical-align: middle;
+        }
+
+        .table-invoice tr:last-child td {
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        .milestone-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--brand-primary);
+            background: var(--brand-light);
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: inline-block;
+        }
+
+        .milestone-title {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .milestone-desc {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .milestone-pill {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .pill-paid { background: #dcfce7; color: #166534; font-weight: 700; }
+        .pill-eligible { background: #dbeafe; color: #1e40af; font-weight: 700; }
+        .pill-locked { background: #f1f5f9; color: #64748b; }
+
+        /* Totals Area */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 28px;
+        }
+
+        .totals-box {
+            width: 360px;
+            background: #fafbfc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px 20px;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+        }
+
+        .totals-row.grand-total {
+            border-top: 2px solid #cbd5e1;
+            border-bottom: 2px solid #cbd5e1;
+            padding: 10px 0;
+            margin: 8px 0;
+            font-size: 14.5px;
+            font-weight: 800;
+            color: var(--brand-primary);
+        }
+
+        .totals-row.invoiced {
+            color: #15803d;
+            font-weight: 700;
+        }
+
+        .totals-row.remaining {
+            color: #b45309;
+            font-weight: 700;
+        }
+
+        /* Banking & Payment Box */
+        .payment-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px dashed #94a3b8;
+            border-radius: 8px;
+            padding: 18px 22px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .bank-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--brand-primary);
+            margin-bottom: 8px;
+        }
+
+        .bank-details {
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .bank-details strong {
+            color: var(--text-main);
+        }
+
+        .payment-notes {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        .invoice-footer {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 16px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ─── PRINT MEDIA STYLES ─── */
+        @@media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11.5px !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .page-container {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .invoice-paper {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .invoice-brand-strip {
+                display: block !important;
+                height: 5px !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .table-invoice th {
+                background: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .badge-status, .milestone-num, .milestone-pill, .info-grid, .totals-box, .payment-box {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            @@page {
+                size: A4 portrait;
+                margin: 12mm 15mm;
+            }
+
+            .info-grid, .table-invoice, .totals-section, .payment-box {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sticky Top Action Ribbon (Visible on Screen, Hidden during Print) -->
+    <div class="top-action-bar no-print">
+        <div class="action-left">
+            <a href="javascript:window.history.back();" class="btn-action btn-back">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Portal
+            </a>
+            <div style="font-size:12px; color:#cbd5e1;">
+                UbuhleBethu ConnectPro &rsaquo; Tax Invoice <strong>@Model.InvoiceNumber</strong>
+            </div>
+        </div>
+        <div class="action-right">
+            @if (Model.JobId.HasValue)
+            {
+                <a asp-controller="Dashboard" asp-action="InvoicePdf" asp-route-jobId="@Model.JobId.Value" class="btn-action btn-download" title="Download direct PDF file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF
+                </a>
+            }
+            else if (Model.QuoteId.HasValue)
+            {
+                <a asp-controller="Quotation" asp-action="InvoicePdf" asp-route-id="@Model.QuoteId.Value" class="btn-action btn-download" title="Download direct PDF file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF
+                </a>
+            }
+            <button onclick="window.print()" class="btn-action btn-print">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Print / Save as PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Printable Invoice Document Container -->
+    <div class="page-container">
+        <div class="invoice-paper">
+            <div class="invoice-brand-strip"></div>
+
+            <!-- Letterhead & Meta Header -->
+            <div class="invoice-header">
+                <div>
+                    <div class="brand-logo-area">
+                        <div class="brand-logo-box">UB</div>
+                        <div>
+                            <div class="company-title">Ubuhlebethu Business Enterprise cc</div>
+                            <div class="company-subtitle">ConnectPro Construction &amp; Infrastructure Engineering</div>
+                        </div>
+                    </div>
+                    <div class="company-contact">
+                        195 Corlett Drive, Bramley, Johannesburg, 2018<br/>
+                        <strong>Tel:</strong> +27 11 887 7240 &nbsp;&bull;&nbsp; <strong>Email:</strong> info@ubuhlebethu.co.za<br/>
+                        <strong>CIDB Rating:</strong> 8GB PE &nbsp;&bull;&nbsp; <strong>NHBRC Reg:</strong> 3000184201<br/>
+                        <strong>Company Reg:</strong> 2002/095900/23 &nbsp;&bull;&nbsp; <strong>VAT Reg No:</strong> 4890214820
+                    </div>
+                </div>
+
+                <div class="invoice-meta-box">
+                    <div class="doc-title-badge">TAX INVOICE</div>
+                    <div class="invoice-number-text">#@Model.InvoiceNumber</div>
+                    <div class="meta-list">
+                        <div><strong>Quotation Ref:</strong> @Model.Reference</div>
+                        <div><strong>Issue Date:</strong> @Model.IssueDate.ToString("dd MMM yyyy")</div>
+                        <div><strong>Payment Terms:</strong> Net 30 Days</div>
+                        <div><strong>Due Date:</strong> @Model.DueDate.ToString("dd MMM yyyy")</div>
+                    </div>
+                    <div>
+                        @if (Model.IsFullyPaid)
+                        {
+                            <span class="badge-status badge-paid">Fully Paid &amp; Settled</span>
+                        }
+                        else if (Model.InvoicedAmount > 0)
+                        {
+                            <span class="badge-status badge-partial">Progress Invoiced</span>
+                        }
+                        else
+                        {
+                            <span class="badge-status badge-unpaid">Deposit Outstanding</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client & Project Site Details -->
+            <div class="info-grid">
+                <div>
+                    <div class="info-col-title">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        Billed To (Client Details)
+                    </div>
+                    <div class="info-primary">@Model.ClientName</div>
+                    <div class="info-sub">
+                        @if (!string.IsNullOrWhiteSpace(Model.ClientEmail))
+                        {
+                            <div>Email: @Model.ClientEmail</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.ClientPhone))
+                        {
+                            <div>Phone: @Model.ClientPhone</div>
+                        }
+                        <div>Site Address: <strong>@Model.SiteLocation</strong></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="info-col-title">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        Project Scope &amp; Site Status
+                    </div>
+                    <div class="info-primary">@Model.ProjectType</div>
+                    <div class="info-sub">
+                        <div>Scope: @Model.ProjectDescription</div>
+                        <div>Site Manager: <strong>@Model.SiteManager</strong></div>
+                        <div style="margin-top:4px; display:flex; align-items:center; gap:8px;">
+                            <span>Completion Progress: <strong>@Model.Progress%</strong></span>
+                            <div style="display:inline-block; width:80px; height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; vertical-align:middle;">
+                                <div style="width:@(Model.Progress)%; height:100%; background:#10b981;"></div>
+                            </div>
+                        </div>
+                        @if (Model.NhbrcCompliant)
+                        {
+                            <div style="color:#15803d; font-weight:600; margin-top:2px;">&#10003; NHBRC Verified &amp; Compliant</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Milestone Progress-Based Billing Table -->
+            <div class="section-header">
+                <div>
+                    <div class="section-title">Progressive Milestone Invoicing Schedule</div>
+                    <div class="section-sub">Standard 3-Stage Progress Billing Structure</div>
+                </div>
+            </div>
+
+            <table class="table-invoice">
+                <thead>
+                    <tr>
+                        <th style="width:110px;">Milestone</th>
+                        <th>Description of Works &amp; Billing Gate</th>
+                        <th style="text-align:center; width:90px;">Gate</th>
+                        <th style="text-align:center; width:70px;">Share</th>
+                        <th style="text-align:right; width:130px;">Amount (ZAR)</th>
+                        <th style="text-align:right; width:130px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.Milestones)
+                    {
+                        <tr>
+                            <td>
+                                <span class="milestone-num">Stage @m.StageNumber</span>
+                            </td>
+                            <td>
+                                <div class="milestone-title">@m.Title</div>
+                                <div class="milestone-desc">@m.Description</div>
+                            </td>
+                            <td style="text-align:center; font-size:11.5px; color:var(--text-secondary);">
+                                @(m.RequiredProgress == 0 ? "Activation" : $"{m.RequiredProgress}% Progress")
+                            </td>
+                            <td style="text-align:center; font-weight:600; color:var(--text-secondary);">
+                                @m.Percentage.ToString("0")%
+                            </td>
+                            <td style="text-align:right; font-weight:700; color:var(--text-main);">
+                                ZAR @m.Amount.ToString("N2", ci)
+                            </td>
+                            <td style="text-align:right;">
+                                @if (m.IsPaid)
+                                {
+                                    <span class="milestone-pill pill-paid">&#10003; Paid</span>
+                                }
+                                else if (m.IsEligible)
+                                {
+                                    <span class="milestone-pill pill-eligible">Outstanding</span>
+                                }
+                                else
+                                {
+                                    <span class="milestone-pill pill-locked">Locked</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Totals & Invoicing Balance Breakdown -->
+            <div class="totals-section">
+                <div class="totals-box">
+                    <div class="totals-row">
+                        <span>Subtotal (excl. 15% VAT):</span>
+                        <span>ZAR @Model.Subtotal.ToString("N2", ci)</span>
+                    </div>
+                    <div class="totals-row">
+                        <span>VAT (15.0%):</span>
+                        <span>ZAR @Model.VatAmount.ToString("N2", ci)</span>
+                    </div>
+                    <div class="totals-row grand-total">
+                        <span>Total Contract Value:</span>
+                        <span>ZAR @Model.TotalAmount.ToString("N2", ci)</span>
+                    </div>
+                    <div class="totals-row invoiced">
+                        <span>Total Invoiced to Date:</span>
+                        <span>ZAR @Model.InvoicedAmount.ToString("N2", ci)</span>
+                    </div>
+                    <div class="totals-row remaining">
+                        <span>Remaining Balance to Invoice:</span>
+                        <span>ZAR @Model.RemainingAmount.ToString("N2", ci)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Official Banking Payment Simulation Details -->
+            <div class="payment-box">
+                <div>
+                    <div class="bank-title">Official Banking Details (Electronic Payment Simulation)</div>
+                    <div class="bank-details">
+                        <strong>Bank:</strong> @Model.BankName<br/>
+                        <strong>Account Name:</strong> @Model.AccountName<br/>
+                        <strong>Account Number:</strong> @Model.AccountNumber<br/>
+                        <strong>Branch Code:</strong> @Model.BranchCode<br/>
+                        <strong>Account Type:</strong> @Model.AccountType<br/>
+                        <strong>Payment Reference:</strong> <span style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--brand-primary);">@Model.Reference</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="bank-title">Payment Instructions &amp; Verification</div>
+                    <div class="payment-notes">
+                        &bull; Milestone invoices are due and payable in accordance with the progressive milestone schedule.<br/>
+                        &bull; Use quotation reference <strong>@Model.Reference</strong> for all EFT payment simulations.<br/>
+                        &bull; Once paid, milestone receipts automatically update project ledger and enable construction progression.<br/>
+                        &bull; Questions regarding billing: accounts@ubuhlebethu.co.za or call +27 11 887 7240.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal & Certification Footer -->
+            <div class="invoice-footer">
+                <div>This document is a computer-generated Tax Invoice issued in terms of the South African Value-Added Tax Act, 1991.</div>
+                <div style="margin-top:3px;">
+                    <strong>Ubuhlebethu Business Enterprise cc</strong> &nbsp;&bull;&nbsp; 100% Black Female Owned Enterprise &nbsp;&bull;&nbsp; B-BBEE Level 1 Contributor &nbsp;&bull;&nbsp; CIDB Grade 8GB PE Certified
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

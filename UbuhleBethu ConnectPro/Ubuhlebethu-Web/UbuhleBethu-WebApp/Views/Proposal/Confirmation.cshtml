@@ -1,0 +1,20 @@
+@{
+    ViewData["Title"] = "Proposal received";
+    Layout = "_PublicLayout";
+    var reference = ViewData["Reference"] as string;
+    var email = ViewData["Email"] as string;
+}
+<div class="container receipt">
+    <div class="alert ok" role="status" style="text-align:left"><strong>Thank you – your proposal has been received.</strong></div>
+    <h1 style="font-family:var(--font-head)">We've got it</h1>
+    <p>Keep this reference number. You'll need it to check progress.</p>
+    <div class="ref" aria-label="Your reference">@reference</div>
+    @if (!string.IsNullOrEmpty(email)) { <p style="color:var(--muted)">Use the email <strong>@email</strong> when tracking.</p> }
+    <ol class="steps">
+        <li><b>1</b><div><strong>Review</strong><br />Our office team reads your proposal and the attached document.</div></li>
+        <li><b>2</b><div><strong>Estimate</strong><br />A quantity surveyor prepares an estimate.</div></li>
+        <li><b>3</b><div><strong>Decision</strong><br />We contact you by phone or email to confirm, or to ask for more information.</div></li>
+    </ol>
+    <a class="btn" asp-action="Track" asp-route-reference="@reference">Track this proposal</a>
+    <a class="btn ghost" href="/">Back to our projects</a>
+</div>

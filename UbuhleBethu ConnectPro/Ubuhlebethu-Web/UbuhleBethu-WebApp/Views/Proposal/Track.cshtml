@@ -1,0 +1,49 @@
+@model UbuhlebethuConnectPro.WebApp.Models.Forms.TrackForm
+@using UbuhlebethuConnectPro.WebApp.ApiClient
+@{
+    ViewData["Title"] = "Track a proposal";
+    Layout = "_PublicLayout";
+    var status = ViewData["Status"] as ProposalStatusDto;
+    var flow = new[] { "Submitted", "Reviewed", "Approved", "Invoiced", "Paid" };
+}
+<div class="page-hero"><div class="container"><h1>Track a proposal</h1><p>Enter the reference we gave you and the email you used.</p></div></div>
+<div class="container" style="max-width:640px;padding:2rem 0 4rem">
+    <div class="panel">
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert error" role="alert"><div asp-validation-summary="All"></div></div>
+        }
+        <form method="post" asp-action="Track" novalidate>
+            <div class="field">
+                <label asp-for="Reference">Reference <span class="req">*</span></label>
+                <input asp-for="Reference" class="input" placeholder="UBU-2610-AB12C" autocomplete="off" required />
+            </div>
+            <div class="field">
+                <label asp-for="Email">Email <span class="req">*</span></label>
+                <input asp-for="Email" type="email" class="input" autocomplete="email" required />
+            </div>
+            <button class="btn block" type="submit">Check status</button>
+        </form>
+    </div>
+
+    @if (status != null)
+    {
+        <div class="panel" style="margin-top:1.4rem" role="status">
+            <p class="kicker">@status.Reference</p>
+            <h2>@status.ProjectOfInterest</h2>
+            <p>Status: <span class="status-pill">@status.Status</span></p>
+            <p style="color:var(--muted);font-size:.9rem">Submitted @status.SubmittedAt.ToLocalTime().ToString("dd MMM yyyy")</p>
+            @if (status.Status == "Rejected")
+            {
+                <div class="alert info">We couldn't take this proposal forward.@(string.IsNullOrWhiteSpace(status.Note) ? "" : " Reason: " + status.Note)</div>
+            }
+            else
+            {
+                var idx = Array.IndexOf(flow, status.Status);
+                <div class="timeline" aria-label="Progress">
+                    @for (var i = 0; i < flow.Length; i++) { <span class="@(i <= idx ? "on" : "")">@flow[i]</span> }
+                </div>
+            }
+        </div>
+    }
+</div>

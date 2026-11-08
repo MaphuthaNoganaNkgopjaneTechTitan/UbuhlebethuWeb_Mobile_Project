@@ -1,0 +1,91 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+@{ ViewData["Title"] = "Portfolio View"; }
+
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Portfolio Overview</h1>
+        <p class="page-subtitle">Complete portfolio breakdown by region, type, and financial performance</p>
+    </div>
+    <a href="/Dashboard/Export" class="btn btn-primary">Export Portfolio</a>
+</div>
+
+<div class="metric-strip" style="margin-bottom: 2rem;">
+    <div class="metric-item">
+        <span style="font-weight: bold;">Projects:</span> @Model.Count()
+    </div>
+    <div class="metric-item">
+        <span style="font-weight: bold;">Total Portfolio Value:</span> R @(Model.Sum(j => j.EstimatedCost).ToString("N0"))
+    </div>
+    <div class="metric-item">
+        <span style="font-weight: bold;">Avg Completion:</span> @(Model.Any() ? (int)Model.Average(j => j.Progress) : 0)%
+    </div>
+</div>
+
+<div class="tab-nav" style="margin-bottom: 1rem;">
+    <a href="javascript:void(0);" class="tab-nav-link" style="border-bottom: 2px solid #9b1c1c; font-weight: bold;">All Projects</a>
+</div>
+
+<div class="data-table-wrap" style="margin-bottom: 2rem;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Job Ref</th>
+                <th>Description</th>
+                <th>Client</th>
+                <th>Region</th>
+                <th>Type</th>
+                <th>Progress</th>
+                <th>Variance</th>
+                <th>Est. Budget</th>
+                <th>Invoiced</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var job in Model)
+            {
+                <tr>
+                    <td>@job.JobNumber</td>
+                    <td>@job.Description</td>
+                    <td>@job.ClientName</td>
+                    <td>@job.Location</td>
+                    <td>@job.BuildingType</td>
+                    <td>
+                        <div class="progress-bar-wrap">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: @job.Progress%;"></div>
+                            </div>
+                            <span class="progress-pct">@job.Progress%</span>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-neutral">0%</span></td>
+                    <td>R @job.EstimatedCost.ToString("N0")</td>
+                    <td>R @job.InvoicedAmount.ToString("N0")</td>
+                    <td>R @((job.EstimatedCost - job.InvoicedAmount).ToString("N0"))</td>
+                    <td><span class="badge badge-success">Active</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center;">
+            <div>
+                <div style="color: #666; text-transform: uppercase; font-size: 0.875rem;">Total Budget</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #333;">R @(Model.Sum(j => j.EstimatedCost).ToString("N0"))</div>
+            </div>
+            <div style="border-left: 1px solid #eee; border-right: 1px solid #eee;">
+                <div style="color: #666; text-transform: uppercase; font-size: 0.875rem;">Total Invoiced</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #333;">R @(Model.Sum(j => j.InvoicedAmount).ToString("N0"))</div>
+            </div>
+            <div>
+                <div style="color: #666; text-transform: uppercase; font-size: 0.875rem;">Total Outstanding</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #333;">R @((Model.Sum(j => j.EstimatedCost) - Model.Sum(j => j.InvoicedAmount)).ToString("N0"))</div>
+            </div>
+        </div>
+    </div>
+</div>
+

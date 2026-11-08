@@ -1,0 +1,97 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+@{ ViewData["Title"] = "Reports"; }
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Management Reports</h1>
+        <p class="page-subtitle">Structured reporting for executive decision-making</p>
+    </div>
+    <div class="page-actions">
+        <a asp-controller="Dashboard" asp-action="RegionalMap" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px;">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                <line x1="8" y1="2" x2="8" y2="18"></line>
+                <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            Regional Map
+        </a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-top: 0; color: #9b1c1c;">Financial Summary Report</h3>
+            <p style="color: #555; margin-bottom: 1.5rem;">Revenue, costs, and profit margins</p>
+            <a href="/Dashboard/Export?type=financial" class="btn btn-primary">Generate</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-top: 0; color: #9b1c1c;">Progress &amp; Completion Report</h3>
+            <p style="color: #555; margin-bottom: 1.5rem;">Site-by-site completion analysis</p>
+            <a href="/Dashboard/Export?type=progress" class="btn btn-primary">Generate</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin-top: 0; color: #9b1c1c;">Regional Performance Report</h3>
+            <p style="color: #555; margin-bottom: 1.5rem;">Geographic breakdown and regional KPIs</p>
+            <a href="/Dashboard/RegionalMap" class="btn btn-primary">Generate</a>
+        </div>
+    </div>
+    
+    <div class="card" style="border-left: 4px solid #0056b3;">
+        <div class="card-body">
+            <h3 style="margin-top: 0; color: #0056b3;">AI Executive Summary</h3>
+            <p style="color: #555; margin-bottom: 1.5rem;">AI-generated narrative report</p>
+            <a href="/Dashboard/AIReport" class="btn btn-action-blue">Generate with AI</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 style="margin: 0;">Scheduled Reports</h3>
+    </div>
+    <div class="card-body">
+        <div class="data-table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Report Name</th>
+                        <th>Frequency</th>
+                        <th>Last Run</th>
+                        <th>Next Run</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Monthly Financial Summary</td>
+                        <td>Monthly</td>
+                        <td>1 Aug 2026</td>
+                        <td>1 Sep 2026</td>
+                        <td><span class="badge badge-success">Active</span></td>
+                    </tr>
+                    <tr>
+                        <td>Weekly Progress Update</td>
+                        <td>Weekly</td>
+                        <td>11 Aug 2026</td>
+                        <td>18 Aug 2026</td>
+                        <td><span class="badge badge-success">Active</span></td>
+                    </tr>
+                    <tr>
+                        <td>Quarterly Board Report</td>
+                        <td>Quarterly</td>
+                        <td>1 Jul 2026</td>
+                        <td>1 Oct 2026</td>
+                        <td><span class="badge badge-neutral">Pending</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

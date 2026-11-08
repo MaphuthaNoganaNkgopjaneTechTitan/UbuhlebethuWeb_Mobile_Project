@@ -1,0 +1,174 @@
+@model UbuhlebethuConnectPro.WebApp.Models.DTOs.InvoiceViewModel
+@{
+    @* No-op placeholder change: DTO reference intentionally unchanged. *@
+    ViewData["Title"] = $"Invoice #{Model.Id}";
+    
+    decimal vatRate = 0.15m;
+    decimal total = Model.Amount;
+    decimal subtotal = Math.Round(total / (1m + vatRate), 2);
+    decimal vat = total - subtotal;
+}
+
+<!-- Actions bar -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:12px; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <a asp-controller="Dashboard" asp-action="ClientPortal" class="btn btn-secondary btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Back
+        </a>
+        <div style="font-size:0.78rem; color:var(--text-muted);">
+            Client Portal &rsaquo; <strong style="color:var(--text-primary);">Invoice #@Model.Id</strong>
+        </div>
+    </div>
+    <div class="page-actions">
+        <a asp-action="Download" asp-route-id="@Model.Id" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download Invoice
+        </a>
+        @if (User.IsInRole("Office") || User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Management") || User.IsInRole("Executive"))
+        {
+            <form asp-action="Send" asp-route-id="@Model.Id" method="post" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary">Send notification</button>
+            </form>
+        }
+        <button class="btn btn-secondary" onclick="window.print()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9"/>
+                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Print
+        </button>
+    </div>
+</div>
+
+<!-- Invoice Document -->
+<div class="card" style="max-width:820px; margin:0 auto;">
+    <div class="card-body" style="padding:40px 48px;">
+
+        <!-- Header -->
+        <div class="invoice-header">
+            <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <div style="width:38px; height:38px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; overflow: hidden; background: transparent;">
+                        <img src="~/images/logo.png" alt="Ubuhlebethu Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+                    </div>
+                    <div class="invoice-company-name">Ubuhlebethu Business Enterprise cc</div>
+                </div>
+                <div class="invoice-company-sub">ConnectPro Construction Management</div>
+                <div style="margin-top:12px; font-size:0.75rem; color:var(--text-muted); line-height:1.8;">
+                    123 Enterprise Road, Johannesburg<br/>
+                    Gauteng, 2001, South Africa<br/>
+                    Tel: +27 11 000 0000<br/>
+                    VAT No: 4XXXXXXXXX
+                </div>
+            </div>
+            <div class="invoice-meta">
+                <div class="invoice-number">INVOICE</div>
+                <div style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-top:4px;">#@Model.Id</div>
+                <div style="margin-top:16px; font-size:0.75rem; line-height:1.8; color:var(--text-muted); text-align:right;">
+                    <strong style="color:var(--text-primary);">Date Issued:</strong><br/>
+                    @Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")<br/>
+                    <strong style="color:var(--text-primary);">Due Date:</strong><br/>
+                    @Model.CreatedAt.ToLocalTime().AddDays(30).ToString("dd MMM yyyy")
+                </div>
+            </div>
+        </div>
+
+        <hr class="invoice-divider" />
+
+        <!-- Bill to -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:28px;">
+            <div>
+                <div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:8px;">Bill To</div>
+                <div style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">@(string.IsNullOrEmpty(Model.QuoteClientName) ? "Client" : Model.QuoteClientName)</div>
+                <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.8; margin-top:4px;">
+                    @(string.IsNullOrEmpty(Model.QuoteSiteLocation) ? "Site location" : Model.QuoteSiteLocation)<br/>
+                    South Africa
+                </div>
+            </div>
+            <div>
+                <div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:8px;">Project Reference</div>
+                <div style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">@(string.IsNullOrEmpty(Model.QuoteReference) ? "REF" : Model.QuoteReference)</div>
+                <div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">@(string.IsNullOrEmpty(Model.QuoteProjectType) ? "Construction" : Model.QuoteProjectType)</div>
+                <div style="margin-top:8px;">
+                    <span class="badge badge-success">Approved</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line items table -->
+        <table class="invoice-table data-table" style="margin-bottom:0;">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th style="text-align:right;">Unit Price</th>
+                    <th style="text-align:center;">Qty</th>
+                    <th style="text-align:right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="fw-600">@(string.IsNullOrEmpty(Model.QuoteProjectType) ? "Construction Services" : Model.QuoteProjectType)</div>
+                        <div class="small text-muted">@(Model.QuoteProjectDescription.Length > 80 ? Model.QuoteProjectDescription.Substring(0,80) + "..." : Model.QuoteProjectDescription)</div>
+                    </td>
+                    <td style="text-align:right;">ZAR @subtotal.ToString("N2")</td>
+                    <td style="text-align:center;">1</td>
+                    <td style="text-align:right;" class="fw-600">ZAR @subtotal.ToString("N2")</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background:#fafbfc;">
+                    <td colspan="3" style="text-align:right; font-size:0.78rem; color:var(--text-muted);">Subtotal (excl. VAT)</td>
+                    <td style="text-align:right;" class="fw-600">ZAR @subtotal.ToString("N2")</td>
+                </tr>
+                <tr style="background:#fafbfc;">
+                    <td colspan="3" style="text-align:right; font-size:0.78rem; color:var(--text-muted);">VAT (15%)</td>
+                    <td style="text-align:right; color:var(--text-secondary);">ZAR @vat.ToString("N2")</td>
+                </tr>
+                <tr class="invoice-total-row">
+                    <td colspan="3" style="text-align:right; border-top:2px solid var(--color-border);">Total Due (incl. VAT)</td>
+                    <td style="text-align:right; color:var(--color-primary); font-size:1rem; border-top:2px solid var(--color-border);">
+                        ZAR @total.ToString("N2")
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <hr class="invoice-divider" />
+
+        <!-- Payment info -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <div>
+                <div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:8px;">Payment Details</div>
+                <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.9;">
+                    <strong>Bank:</strong> First National Bank<br/>
+                    <strong>Account Name:</strong> Ubuhlebethu Business Enterprise cc<br/>
+                    <strong>Account No:</strong> XXXX XXXX XXXX<br/>
+                    <strong>Branch Code:</strong> 250655<br/>
+                    <strong>Reference:</strong> @(string.IsNullOrEmpty(Model.QuoteReference) ? Model.Id.ToString() : Model.QuoteReference)
+                </div>
+            </div>
+            <div>
+                <div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:8px;">Terms &amp; Notes</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.8;">
+                    Payment due within 30 days of invoice date.<br/>
+                    Late payments attract 2% per month interest.<br/>
+                    All disputes must be raised within 7 days of receipt.
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:32px; text-align:center; font-size:0.7rem; color:var(--text-muted); border-top:1px solid var(--color-border); padding-top:16px;">
+            Ubuhlebethu Business Enterprise cc &nbsp;&bull;&nbsp; CIDB Registered &nbsp;&bull;&nbsp; NHBRC Enrolled &nbsp;&bull;&nbsp; Reg No: XXXXXXXX
+        </div>
+    </div>
+</div>

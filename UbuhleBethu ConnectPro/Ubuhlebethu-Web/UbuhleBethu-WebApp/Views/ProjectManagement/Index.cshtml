@@ -1,0 +1,186 @@
+@model IEnumerable<UbuhlebethuConnectPro.Core.Models.Job>
+@using UbuhlebethuConnectPro.WebApp.Controllers
+@{
+    ViewData["Title"] = "Project Management";
+    var jobs = Model?.ToList() ?? new List<UbuhlebethuConnectPro.Core.Models.Job>();
+    int currentCount = jobs.Count(j => !ProjectManagementController.IsPast(j));
+    int pastCount = jobs.Count - currentCount;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Project Management</h1>
+        <p class="page-subtitle">Review all current and past projects and remove them from the system</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="data-table-wrap">
+    <div class="data-table-header">
+        <p class="data-table-title">All Projects <span>(<span id="pmVisibleCount">@jobs.Count</span> of @jobs.Count)</span></p>
+        <div class="table-controls">
+            <select id="pmFilter" class="form-select" style="width:auto; min-width:150px; padding:6px 12px; font-size:0.8rem;" onchange="pmApplyFilter()">
+                <option value="all">All (@jobs.Count)</option>
+                <option value="current">Current (@currentCount)</option>
+                <option value="past">Past (@pastCount)</option>
+            </select>
+            <div class="table-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                <input type="text" id="pmSearch" placeholder="Search projects..." oninput="pmApplyFilter()" />
+            </div>
+            <button type="button" id="pmDeleteBtn" class="btn btn-danger btn-sm" style="display:none;" onclick="pmOpenModal()">
+                Delete Selected (<span id="pmSelectedCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="data-table" id="pmTable">
+            <thead>
+                <tr>
+                    <th style="width:38px; text-align:center;">
+                        <input type="checkbox" id="pmSelectAll" class="form-check-input" title="Select all visible projects" onchange="pmToggleAll(this)" />
+                    </th>
+                    <th>Project</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Invoiced</th>
+                    <th>Est. Budget</th>
+                    <th>Client</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (jobs.Count == 0)
+                {
+                    <tr><td colspan="9" class="text-center py-4 text-muted">There are no projects in the system.</td></tr>
+                }
+                @foreach (var item in jobs)
+                {
+                    var past = ProjectManagementController.IsPast(item);
+                    <tr class="pm-row" data-kind="@(past ? "past" : "current")"
+                        data-search="@((item.Description + " " + item.JobNumber + " " + item.ClientName + " " + item.BuildingType).ToLowerInvariant())">
+                        <td style="text-align:center;">
+                            <input type="checkbox" class="form-check-input pm-cb" value="@item.Id"
+                                   data-title="@item.Description" data-jobnum="@item.JobNumber" onchange="pmOnCheck()" />
+                        </td>
+                        <td>
+                            <div class="td-primary">@item.Description</div>
+                            <div class="small text-muted">@item.JobNumber</div>
+                        </td>
+                        <td><span class="badge badge-neutral">@item.BuildingType</span></td>
+                        <td><span class="badge @(past ? "badge-neutral" : "badge-success")">@(past ? "Past" : "Current") &middot; @item.Status</span></td>
+                        <td>@item.Progress%</td>
+                        <td>R @item.InvoicedAmount.ToString("N0")</td>
+                        <td>R @item.EstimatedCost.ToString("N0")</td>
+                        <td>@item.ClientName</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <a asp-controller="Dashboard" asp-action="Details" asp-route-id="@item.Id" class="btn btn-secondary btn-sm">View</a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" title="Delete this project"
+                                    data-id="@item.Id" data-title="@item.Description (@item.JobNumber)" onclick="pmDeleteOne(this)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="pmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" style="color: var(--color-danger); font-weight:600;">Confirm Project Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" style="font-size:0.88rem;">
+                        You are about to delete <strong id="pmModalCount">0 projects</strong> from the system.
+                        Progress, order book value, invoiced and outstanding totals will update everywhere.
+                    </div>
+                    <div id="pmModalList" class="border rounded p-2 mb-3 bg-light" style="max-height:160px; overflow-y:auto; font-size:0.85rem;"></div>
+                    <div id="pmModalIds"></div>
+                    <label for="pmReason" class="form-label fw-bold" style="font-size:0.85rem;">Reason (recorded in the audit log)</label>
+                    <textarea id="pmReason" name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g., Cancelled contract, data cleanup..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function pmRows() { return Array.from(document.querySelectorAll('#pmTable .pm-row')); }
+        function pmVisibleRows() { return pmRows().filter(function (r) { return r.style.display !== 'none'; }); }
+
+        function pmApplyFilter() {
+            var kind = document.getElementById('pmFilter').value;
+            var q = document.getElementById('pmSearch').value.trim().toLowerCase();
+            pmRows().forEach(function (r) {
+                var ok = (kind === 'all' || r.dataset.kind === kind) && (!q || r.dataset.search.indexOf(q) !== -1);
+                r.style.display = ok ? '' : 'none';
+                if (!ok) r.querySelector('.pm-cb').checked = false;
+            });
+            document.getElementById('pmVisibleCount').textContent = pmVisibleRows().length;
+            pmOnCheck();
+        }
+
+        function pmToggleAll(master) {
+            pmVisibleRows().forEach(function (r) { r.querySelector('.pm-cb').checked = master.checked; });
+            pmOnCheck();
+        }
+
+        function pmOnCheck() {
+            var checked = document.querySelectorAll('.pm-cb:checked').length;
+            var visible = pmVisibleRows().length;
+            document.getElementById('pmSelectedCount').textContent = checked;
+            document.getElementById('pmDeleteBtn').style.display = checked > 0 ? '' : 'none';
+            var master = document.getElementById('pmSelectAll');
+            master.checked = visible > 0 && checked === visible;
+            master.indeterminate = checked > 0 && checked < visible;
+        }
+
+        function pmShow(items) {
+            var list = document.getElementById('pmModalList');
+            var ids = document.getElementById('pmModalIds');
+            list.innerHTML = ''; ids.innerHTML = '';
+            items.forEach(function (it) {
+                var h = document.createElement('input');
+                h.type = 'hidden'; h.name = 'projectIds'; h.value = it.id; ids.appendChild(h);
+                var d = document.createElement('div');
+                d.className = 'py-1 border-bottom';
+                d.textContent = it.title;
+                list.appendChild(d);
+            });
+            document.getElementById('pmModalCount').textContent = items.length + ' project' + (items.length === 1 ? '' : 's');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('pmModal')).show();
+        }
+
+        function pmOpenModal() {
+            var items = Array.from(document.querySelectorAll('.pm-cb:checked')).map(function (cb) {
+                var num = cb.dataset.jobnum ? cb.dataset.jobnum + ': ' : '';
+                return { id: cb.value, title: num + (cb.dataset.title || 'Project') };
+            });
+            if (items.length) pmShow(items);
+        }
+
+        function pmDeleteOne(btn) {
+            pmShow([{ id: btn.dataset.id, title: btn.dataset.title }]);
+        }
+    </script>
+}

@@ -1,0 +1,76 @@
+@model IEnumerable<UbuhlebethuConnectPro.WebApp.ApiClient.NotificationDto>
+
+@Html.AntiForgeryToken()
+
+@if (Model != null && Model.Any())
+{
+    <ul class="list-group list-group-flush" id="notificationsList">
+        @foreach (var n in Model)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-start" id="notif-@n.Id">
+                <div>
+                    <div class="small text-muted">@n.CreatedAt.ToLocalTime().ToString("g")</div>
+                    <div class="@(n.IsRead ? "" : "fw-bold")">@n.Message</div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="markNotification('@n.Id')">Mark read</button>
+                </div>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <div class="p-3 text-muted" id="noNotificationsMsg">No notifications found.</div>
+}
+
+<script>
+    async function markNotification(id) {
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        const formData = new FormData();
+        formData.append('id', id);
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        try {
+            const response = await fetch('/Notifications/MarkRead', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                // Remove the row from the view
+                const item = document.getElementById('notif-' + id);
+                if (item) {
+                    item.remove();
+                }
+
+                // Decrement header notification counter/badge if present
+                const badges = document.querySelectorAll('.badge');
+                badges.forEach(badge => {
+                    let count = parseInt(badge.textContent.trim());
+                    if (!isNaN(count) && count > 0) {
+                        count -= 1;
+                        badge.textContent = count > 0 ? count : '';
+                        if (count <= 0) {
+                            badge.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Show empty message if all notifications are cleared
+                const list = document.getElementById('notificationsList');
+                if (list && list.children.length === 0) {
+                    list.outerHTML = '<div class="p-3 text-muted">No notifications found.</div>';
+                }
+            } else {
+                console.error('Failed to mark notification as read');
+            }
+        } catch (err) {
+            console.error('Error:', err);
+        }
+    }
+</script>

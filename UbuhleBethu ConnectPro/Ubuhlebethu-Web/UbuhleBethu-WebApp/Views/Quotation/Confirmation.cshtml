@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Request Submitted";
+}
+
+<div style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
+    <div style="text-align:center; max-width:460px;">
+        <!-- Success icon -->
+        <div style="width:64px; height:64px; background:var(--color-success-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        </div>
+
+        <h2 style="font-size:1.3rem; font-weight:700; color:var(--text-primary); margin-bottom:8px; letter-spacing:-0.02em;">
+            Quotation Request Received
+        </h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.6; margin-bottom:24px;">
+            @ViewBag.Message<br/>
+            Our Quantity Surveying team will review your request and respond within 48 business hours.
+        </p>
+
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <a asp-controller="Dashboard" asp-action="ClientPortal" class="btn btn-secondary">
+                View My Portal
+            </a>
+            <a asp-controller="Quotation" asp-action="Create" class="btn btn-primary">
+                Submit Another
+            </a>
+            <a class="btn btn-secondary" asp-controller="Notifications" asp-action="Index" style="display:inline-flex; align-items:center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px;margin-right:4px;">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                Notifications
+            </a>
+        </div>
+    </div>
+</div>

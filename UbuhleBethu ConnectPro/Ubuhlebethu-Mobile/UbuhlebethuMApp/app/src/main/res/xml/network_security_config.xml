@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext only for local dev so the emulator can talk to your laptop. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- If testing on a physical phone, add your laptop's LAN IP here too. -->
+        <!-- <domain includeSubdomains="false">192.168.1.42</domain> -->
+    </domain-config>
+
+    <!-- Everything else (Azure, etc.) stays HTTPS-only. -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
